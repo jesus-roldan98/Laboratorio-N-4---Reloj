@@ -40,6 +40,15 @@ typedef struct DigtalOutputS {
     
 };
 
+typedef struct DigitalInputS {
+    
+    int port;
+    int pin;
+    bool inverted;
+    bool last_state;
+    
+};
+
 /* === Private function declarations =============================================================================== */
 
 /* === Private variable definitions ================================================================================ */
@@ -47,7 +56,7 @@ typedef struct DigtalOutputS {
 /* === Public variable definitions ================================================================================= */
 
 /* === Private function definitions ================================================================================ */
-
+//salida
 DigitalOutputT DigitalOutputCreate(int port, int pin) {
     DigitalOutputT self = malloc(sizeof(struct DigtalOutputS));
     if (self != NULL) {
@@ -78,6 +87,52 @@ void DigitalOutputToggle (DigitalOutputT self) {
 
 Chip_GPIO_SetPinToggle(LPC_GPIO_PORT, self -> port, self -> pin);
 
+}
+// Etrada
+DigitalInputT DigitalInputCreate(int port, int pin, bool inverted) {
+    DigitalInputT self = malloc(sizeof(struct DigitalInputS));
+    if (self != NULL) {
+        self->port = port;
+        self->pin = pin;
+        self->inverted = inverted;
+        self->last_state = false;
+
+        Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, self -> port, self -> pin, false);
+    }
+    return self;
+}
+
+bool DigitalGetState (DigitalInputT self) {
+    bool state = Chip_GPIO_ReadPortBit(LPC_GPIO_PORT, self -> port, self -> pin);
+
+    if (self -> inverted) {
+        state = !state;
+    }
+    return state;
+}
+
+int DigitalInputHasChanged (DigitalInputT self) {
+    bool current_state = DigitalGetState(self);
+    int result = 0;
+
+    if (current_state && !self->last_state) {
+        result = 1;
+    }else
+    if (!current_state && self->last_state) {
+        result = -1;
+    }
+
+    self->last_state = current_state;
+
+    return result;
+}
+
+bool DigitalInputHasActivate (DigitalInputT self) {
+    return DigitalInputHasChanged(self) == 1;
+}
+
+bool DigitalInputHasDeactivate (DigitalInputT self) {
+    return DigitalInputHasChanged(self) == -1;
 }
 
 /* === Public function implementation ============================================================================== */

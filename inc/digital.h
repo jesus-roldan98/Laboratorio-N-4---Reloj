@@ -25,7 +25,7 @@ SPDX-License-Identifier: MIT
  **/
 
 /* === Headers files inclusions ==================================================================================== */
-
+#include <stdbool.h>
 /* === Header for C++ compatibility ================================================================================ */
 
 #ifdef __cplusplus
@@ -38,6 +38,8 @@ extern "C" {
 
 typedef struct DigtalOutputS *DigitalOutputT;
 
+typedef struct DigitalInputS *DigitalInputT;
+
 /* === Public variable declarations ================================================================================ */
 
 /* === Public function declarations ================================================================================ */
@@ -49,6 +51,18 @@ void DigitalOutputActivate (DigitalOutputT self);
 void DigitalOutputDeactivate (DigitalOutputT self);
 
 void DigitalOutputToggle (DigitalOutputT self);
+
+// Entadas
+
+DigitalInputT DigitalInputCreate(int port, int pin, bool inverted);
+
+bool DigitalGetState (DigitalInputT self);
+
+int DigitalInputHasChanged (DigitalInputT self);
+
+bool DigitalInputHasActivate (DigitalInputT self);
+
+bool DigitalInputHasDeactivate (DigitalInputT self);
 
 /* === End of conditional blocks =================================================================================== */
 
