@@ -23,31 +23,12 @@ SPDX-License-Identifier: MIT
 
 /* === Headers files inclusions ==================================================================================== */
 
-#include "digital.h"
+#include "bsp.h"
 #include "chip.h"
-#include <stdbool.h>
-#include "defines.h"
-#include <stdlib.h>
 
 /* === Macros definitions ========================================================================================== */
 
 /* === Private data type declarations ============================================================================== */
-
-typedef struct DigtalOutputS {
-
-    int port;
-    int pin;
-
-};
-
-typedef struct DigitalInputS {
-
-    int port;
-    int pin;
-    bool inverted;
-    bool last_state;
-
-};
 
 /* === Private function declarations =============================================================================== */
 
@@ -56,81 +37,55 @@ typedef struct DigitalInputS {
 /* === Public variable definitions ================================================================================= */
 
 /* === Private function definitions ================================================================================ */
-// salida
-DigitalOutputT DigitalOutputCreate(int port, int pin) {
-    DigitalOutputT self = malloc(sizeof(struct DigtalOutputS));
-    if (self != NULL) {
-        self->port = port;
-        self->pin = pin;
-
-        Chip_GPIO_SetPinState(LPC_GPIO_PORT, self->port, self->pin, false);
-        Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, self->port, self->pin, true);
-    }
-
-    return self;
-    
-}
-
-void DigitalOutputActivate(DigitalOutputT self) {
-
-    Chip_GPIO_SetPinState(LPC_GPIO_PORT, self->port, self->pin, true);
-}
-
-void DigitalOutputDeactivate(DigitalOutputT self) {
-
-    Chip_GPIO_SetPinState(LPC_GPIO_PORT, self->port, self->pin, false);
-}
-
-void DigitalOutputToggle(DigitalOutputT self) {
-
-    Chip_GPIO_SetPinToggle(LPC_GPIO_PORT, self->port, self->pin);
-}
-// Etrada
-DigitalInputT italInputCreate(int port, int pin, bool inverted) {
-    DigitalInputT self = malloc(sizeof(struct DigitalInputS));
-    if (self != NULL) {
-        self->port = port;
-        self->pin = pin;
-        self->inverted = inverted;
-        self->last_state = false;
-
-        Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, self->port, self->pin, false);
-    }
-    return self;
-}
-
-bool DigitalInputGetState(DigitalInputT self) {
-    bool state = Chip_GPIO_ReadPortBit(LPC_GPIO_PORT, self->port, self->pin);
-
-    if (self->inverted) {
-        state = !state;
-    }
-    return state;
-}
-
-int DigitalInputHasChanged(DigitalInputT self) {
-    bool current_state = DigitalInputGetState(self);
-    int result = 0;
-
-    if (current_state && !self->last_state) {
-        result = 1;
-    } else if (!current_state && self->last_state) {
-        result = -1;
-    }
-
-    self->last_state = current_state;
-
-    return result;
-}
-
-bool DigitalInputHasActivate(DigitalInputT self) {
-    return DigitalInputHasChanged(self) == 1;
-}
-
-bool DigitalInputHasDeactivate(DigitalInputT self) {
-    return DigitalInputHasChanged(self) == -1;
-}
 
 /* === Public function implementation ============================================================================== */
+
+/*@brief implementacion de una board
+ * @param self puntero a la estructura de la placa
+ * @return puntero a la estructura de la placa
+ * @details Crea un objeto de tipo BoardT y lo inicializa con los pines correspondientes a los leds y botones.
+ * @note Se utiliza la libreria Chip_SCU_PinMuxSet para configurar los pines.
+ * @note Se utiliza la libreria DigitalOutputCreate para crear los objetos de salida.
+ * @note Se utiliza la libreria DigitalInputCreate para crear los objetos de entrada.
+*/
+
+BoardT BoardCreate(void) {
+
+    struct BoardS * self = malloc(sizeof(struct BoardS));
+
+    Chip_SCU_PinMuxSet(LED_R_PORT, LED_R_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | LED_R_FUNC);
+    self -> LedRed = DigitalOutputCreate(LED_R_GPIO, LED_R_BIT);
+
+    Chip_SCU_PinMuxSet(LED_G_PORT, LED_G_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | LED_G_FUNC);
+    self -> LedGreen = DigitalOutputCreate(LED_G_GPIO, LED_G_BIT);
+
+    Chip_SCU_PinMuxSet(LED_B_PORT, LED_B_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | LED_B_FUNC);
+    self -> LedBlue = DigitalOutputCreate(LED_B_GPIO, LED_B_BIT);
+
+    /******************/
+    Chip_SCU_PinMuxSet(LED_1_PORT, LED_1_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | LED_1_FUNC);
+    self -> Led1 = DigitalOutputCreate(LED_1_GPIO, LED_1_BIT);
+
+    Chip_SCU_PinMuxSet(LED_2_PORT, LED_2_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | LED_2_FUNC);
+    self->Led2 = DigitalOutputCreate(LED_2_GPIO, LED_2_BIT);
+
+    Chip_SCU_PinMuxSet(LED_3_PORT, LED_3_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | LED_3_FUNC);
+    self->Led3 = DigitalOutputCreate(LED_3_GPIO, LED_3_BIT);
+
+    /******************/
+    Chip_SCU_PinMuxSet(TEC_1_PORT, TEC_1_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_PULLUP | TEC_1_FUNC);
+    self -> Input1 = DigitalInputCreate(TEC_1_GPIO, TEC_1_BIT, true);
+
+    Chip_SCU_PinMuxSet(TEC_2_PORT, TEC_2_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_PULLUP | TEC_2_FUNC);
+    self -> Input2 = DigitalInputCreate(TEC_2_GPIO, TEC_2_BIT, true);
+
+    Chip_SCU_PinMuxSet(TEC_3_PORT, TEC_3_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_PULLUP | TEC_3_FUNC);
+    self -> Input3 = DigitalInputCreate(TEC_3_GPIO, TEC_3_BIT, true);
+
+    Chip_SCU_PinMuxSet(TEC_4_PORT, TEC_4_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_PULLUP | TEC_4_FUNC);
+    self -> Input4 = DigitalInputCreate(TEC_4_GPIO, TEC_4_BIT, true);
+
+    return self;
+}
 
 /* === End of documentation ======================================================================================== */
