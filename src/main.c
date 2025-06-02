@@ -96,13 +96,13 @@ int main(void) {
         }
 
         ScreenRefresh(board->screen);
-        for (int index = 0; index < 100; index++) {
+        
             for (int delay = 0; delay < 25000; delay++) { 
 
                 __asm("NOP"); 
 
             }
-        }
+        
     }
 }
 
