@@ -40,11 +40,8 @@
 
 /* === Headers files inclusions =============================================================== */
 
-#include "chip.h"
-#include <stdbool.h>
-#include "digital.h"
-#include "defines.h"
 #include "bsp.h"
+#include <stdbool.h>
 
 /* === Macros definitions ====================================================================== */
 
@@ -65,37 +62,46 @@
 int main(void) {
 
     int divisor = 0;
-    
+    uint8_t value[4] = {1, 2, 3, 4};
+
     BoardT board = BoardCreate();
 
+    ScreenWriteBCD(board->screen, value, sizeof(value));
+    
+
     while (true) {
-        if (DigitalInputGetState (board -> Input1) ){
-            DigitalOutputActivate (board -> LedBlue);
-        } else {
-            DigitalOutputDeactivate (board -> LedBlue);
-        }
-
-        
-        if (DigitalInputHasActivate (board -> Input2) ){
-            DigitalOutputToggle (board -> Led1);
-        }
-        
-
-        if (DigitalInputHasActivate (board -> Input3) ){
-            DigitalOutputActivate (board -> Led2);
-        }
-        if (DigitalInputHasActivate (board -> Input4) ){
-            DigitalOutputDeactivate (board -> Led2);
-        }
+        // if (DigitalInputGetState (board -> Input1) ){
+        //     DigitalOutputActivate (board -> LedBlue);
+        // } else {
+        //     DigitalOutputDeactivate (board -> LedBlue);
+        // }
+        //
+        //
+        // if (DigitalInputHasActivate (board -> Input2) ){
+        //     DigitalOutputToggle (board -> Led1);
+        // }
+        //
+        //
+        // if (DigitalInputHasActivate (board -> Input3) ){
+        //     DigitalOutputActivate (board -> Led2);
+        // }
+        // if (DigitalInputHasActivate (board -> Input4) ){
+        //     DigitalOutputDeactivate (board -> Led2);
+        // }
 
         divisor++;
         if (divisor == 5) {
             divisor = 0;
-            DigitalOutputToggle (board -> Led3);
+            // DigitalOutputToggle (board -> Led3);
         }
 
+        ScreenRefresh(board->screen);
         for (int index = 0; index < 100; index++) {
-            for (int delay = 0; delay < 25000; delay++) { __asm("NOP"); }
+            for (int delay = 0; delay < 25000; delay++) { 
+
+                __asm("NOP"); 
+
+            }
         }
     }
 }

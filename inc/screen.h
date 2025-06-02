@@ -17,14 +17,17 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 SPDX-License-Identifier: MIT
 *********************************************************************************************************************/
 
-#ifndef BSP_H_
-#define BSP_H_
+#ifndef SCREEN_H_
+#define SCREEN_H_
 
-/** @file bsp.h
- ** @brief Plantilla para la creación de archivos de de cabeceras en lenguaje C
+/** @file screen.h
+ ** @brief Declaraciones del modulo para la gestion de una pantalla multplexada de 7 segmentos
  **/
 
 /* === Headers files inclusions ==================================================================================== */
+
+#include <stdbool.h>
+#include <stdint.h>
 
 /* === Header for C++ compatibility ================================================================================ */
 
@@ -34,39 +37,40 @@ extern "C" {
 
 /* === Public macros definitions =================================================================================== */
 
-#include "digital.h"
-#include "screen.h"
+#define SEGMENT_A (1 << 0)
+#define SEGMENT_B (1 << 1)
+#define SEGMENT_C (1 << 2)
+#define SEGMENT_D (1 << 3)
+#define SEGMENT_E (1 << 4)
+#define SEGMENT_F (1 << 5)
+#define SEGMENT_G (1 << 6)
+#define SEGMENT_P (1 << 7)
+
 /* === Public data type declarations =============================================================================== */
 
-/* @brief Estructura con los parametros de la placa
- * @param LedRed indica el led rojo esta encendido del led rgb
- * @param LedGreen indica el led verde esta encendido del led rgb
- * @param LedBlue indica el led azul esta encendido del led rgb
- * @param Led1  led 1
- * @param Led2  led 2
- * @param Led3  led 3
- * @param Input1 Pin de la placa para el input 1
- * @param Input2 Pin de la placa para el input 2
- * @param Input3 Pin de la placa para el input 3
- * @param Input4 Pin de la placa para el input 4
- */
+typedef struct ScreenS * ScreenT; //! <- tipo de dato para la pantalla
 
-typedef struct BoardS {
-    DigitalOutputT buzzer;
-    DigitalInputT set_time;
-    DigitalInputT set_alarm;
-    DigitalInputT decrement;
-    DigitalInputT increment;
-    DigitalInputT accept;
-    DigitalInputT cancel;
-    ScreenT screen;
+typedef void (*digits_turn_off_t)(void); // Tipo de funcion para apagar los digitos
 
-} const * BoardT;
+typedef void (*segments_update_t)(uint8_t); // Tipo de funcion para actualizar los segmentos
+
+typedef void (*digits_turn_on_t)(uint8_t); // Tipo de funcion para prender los digitos
+
+typedef struct screen_driver_s {
+    digits_turn_off_t DigitsTurnOff;  // Funcion para apagar los digitos
+    segments_update_t SegmentsUpdate; // Funcion para actualizar los segmentos
+    digits_turn_on_t DigitsTurnOn;    // Funcion para prender los digitos
+} const * screen_driver_t;
+
 /* === Public variable declarations ================================================================================ */
 
 /* === Public function declarations ================================================================================ */
 
-BoardT BoardCreate(void); //! <-- Crea la estructura de la placa y asigna los pines a los leds y botones
+ScreenT ScreenCreate(uint8_t digits, screen_driver_t driver);
+
+void ScreenWriteBCD(ScreenT screen, uint8_t value[], uint8_t size);
+
+void ScreenRefresh(ScreenT screen);
 
 /* === End of conditional blocks =================================================================================== */
 
@@ -74,4 +78,4 @@ BoardT BoardCreate(void); //! <-- Crea la estructura de la placa y asigna los pi
 }
 #endif
 
-#endif /* BSP_H_ */
+#endif /* SCREEN_H_ */

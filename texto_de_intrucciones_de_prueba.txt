@@ -1,0 +1,12 @@
+**prueba de alarma
+seteamos la alarma
+habilitamos la alarma
+avanzamos el tiempo hastas donde suena
+verificamos que suene
+callar la alarma
+posponemos la alarma
+adelantamos la alarma
+verificamos que suene
+si se apaga la alarma verificar que vuelva al horario en el que estaba programada
+
+
