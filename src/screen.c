@@ -38,8 +38,12 @@ SPDX-License-Identifier: MIT
 /* === Private data type declarations ============================================================================== */
 
 struct ScreenS {
-    uint8_t digits;                   //! <- cantidad de digitos de la pantalla
-    uint8_t current_digit;            //! <- segmentos de la pantalla
+    uint8_t digits;      //! <- cantidad de digitos de la pantalla
+    uint8_t flashing_to; //! <- segmentos de la pantalla
+    uint8_t current_digit;
+    uint8_t flashing_from;
+    uint8_t flashing_count;
+    uint16_t flashing_frecuency;
     screen_driver_t driver;           //! <- driver de la pantalla
     uint8_t value[SCREEN_MAX_DIGITS]; //! <- valores a mostrar en la pantalla
 };
@@ -76,6 +80,8 @@ ScreenT ScreenCreate(uint8_t digits, screen_driver_t driver) {
         self->digits = digits;
         self->driver = driver;
         self->current_digit = 0; // Inicializar el digito actual
+        self->flashing_frecuency = 0;
+        self->flashing_count = 0;
     }
     return self;
 }
@@ -89,10 +95,41 @@ void ScreenWriteBCD(ScreenT self, uint8_t value[], uint8_t size) {
 }
 
 void ScreenRefresh(ScreenT screen) {
+    uint8_t segments;
+
     screen->driver->DigitsTurnOff();
     screen->current_digit = (screen->current_digit + 1) % screen->digits; // Incrementar el digito actual
-    screen->driver->SegmentsUpdate(
-        screen->value[screen->current_digit]);           // Prender los segmentos correspondientes al digito actual
-    screen->driver->DigitsTurnOn(screen->current_digit); // Prender el digito actual
+
+    segments = screen->value[screen->current_digit]; // Obtener los segmentos del digito actual
+    if (screen->flashing_frecuency != 0) {
+        if (screen->current_digit == 0) {
+
+            screen->flashing_count = (screen->flashing_count + 1) % (screen->flashing_frecuency);
+        }
+        if (screen->flashing_count < (screen->flashing_frecuency / 2)) {
+            if (screen->current_digit >= screen->flashing_from && screen->current_digit <= screen->flashing_to) {
+                segments = 0; // Apagar los segmentos si estamos en la mitad del parpadeo
+            }
+        }
+    }
+    screen->driver->SegmentsUpdate(segments);            // Actualizar los segmentos de la pantalla
+    screen->driver->DigitsTurnOn(screen->current_digit); // Apagar el digito actual
 }
+
+int DisplayFlashDigits(ScreenT display, uint8_t from, uint8_t to, uint16_t divisor) {
+
+    int result = 0;
+    if ((from > to) || (from >= SCREEN_MAX_DIGITS) || (to >= SCREEN_MAX_DIGITS)) {
+        result = -1;
+    } else if (!display) {
+        result = -1;
+    } else {
+        display->flashing_from = from;
+        display->flashing_to = to;
+        display->flashing_frecuency = 2 * divisor;
+        display->flashing_count = 0;
+    }
+    return result;
+}
+
 /* === End of documentation ======================================================================================== */

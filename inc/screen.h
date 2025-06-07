@@ -72,6 +72,13 @@ void ScreenWriteBCD(ScreenT screen, uint8_t value[], uint8_t size);
 
 void ScreenRefresh(ScreenT screen);
 
+/*@brief Funcion que indica cuando pintar y cuando no pintar la pantalla
+ * @param display puntero al descriptor de la pantalla
+ * @param digit numero del digito a encender (0-3)
+ */
+
+int DisplayFlashDigits(ScreenT display, uint8_t from, uint8_t to, uint16_t divisor);
+
 /* === End of conditional blocks =================================================================================== */
 
 #ifdef __cplusplus

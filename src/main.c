@@ -42,6 +42,7 @@
 
 #include "bsp.h"
 #include <stdbool.h>
+#include "screen.h"
 
 /* === Macros definitions ====================================================================== */
 
@@ -62,47 +63,29 @@
 int main(void) {
 
     int divisor = 0;
-    uint8_t value[4] = {1, 2, 3, 4};
+    uint8_t value[4] = {1, 1, 1, 0};
 
     BoardT board = BoardCreate();
 
     ScreenWriteBCD(board->screen, value, sizeof(value));
-    
+
+    DisplayFlashDigits(board->screen, 2, 3, 50);
 
     while (true) {
-        // if (DigitalInputGetState (board -> Input1) ){
-        //     DigitalOutputActivate (board -> LedBlue);
-        // } else {
-        //     DigitalOutputDeactivate (board -> LedBlue);
-        // }
-        //
-        //
-        // if (DigitalInputHasActivate (board -> Input2) ){
-        //     DigitalOutputToggle (board -> Led1);
-        // }
-        //
-        //
-        // if (DigitalInputHasActivate (board -> Input3) ){
-        //     DigitalOutputActivate (board -> Led2);
-        // }
-        // if (DigitalInputHasActivate (board -> Input4) ){
-        //     DigitalOutputDeactivate (board -> Led2);
-        // }
 
         divisor++;
+
         if (divisor == 5) {
             divisor = 0;
             // DigitalOutputToggle (board -> Led3);
         }
 
         ScreenRefresh(board->screen);
+        for (int delay = 0; delay < 25000; delay++) { 
+            
+            __asm("NOP"); 
         
-            for (int delay = 0; delay < 25000; delay++) { 
-
-                __asm("NOP"); 
-
-            }
-        
+        }
     }
 }
 
