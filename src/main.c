@@ -70,9 +70,13 @@ int main(void) {
 
     ScreenWriteBCD(board->screen, value, sizeof(value), value_decimal_points); // Escribir valores en la pantalla
 
-    DisplayFlashDigits(board->screen, 1, 2, 0); // configurar desde donde hasta donde parpadean los displays, ejemplo de 0 a 3 todos los displays el ultimo numero indica la velocidad de parpadeo
-    DisplayFlashPonts(board->screen, 0, 3, 50);
+    DisplayFlashDigits(board->screen, 1, 2, 0); // configurar desde donde hasta donde parpadean los displays, ejemplo de 0 a 3 todos los
+                           
+    DisplayFlashPoints(board->screen, 0, 3, 50); // displays el ultimo numero indica la velocidad de parpadeo
+
     while (true) {
+
+        DigitalOutputToggle(board->led_red);
 
         divisor++;
 
@@ -81,11 +85,7 @@ int main(void) {
         }
 
         ScreenRefresh(board->screen);
-        for (int delay = 0; delay < 25000; delay++) { 
-            
-            __asm("NOP"); 
-        
-        }
+        for (int delay = 0; delay < 25000; delay++) { __asm("NOP"); }
     }
 }
 

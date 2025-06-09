@@ -78,11 +78,11 @@ void ScreenRefresh(ScreenT screen);
  */
 
 int DisplayFlashDigits(ScreenT display, uint8_t from, uint8_t to, uint16_t divisor);
-int DisplayFlashPonts(ScreenT display, uint8_t from, uint8_t to, uint16_t divisor);
+int DisplayFlashPoints(ScreenT display, uint8_t from, uint8_t to, uint16_t divisor);
 
 /**
  * @brief Establece el estado de encendido del punto de un dígito específico.
- * 
+ *
  * @param digit Índice del dígito [0–3].
  * @param on true para encender el punto, false para apagarlo.
  */
@@ -90,7 +90,7 @@ void DisplaySetPoint(uint8_t digit, bool on);
 
 /**
  * @brief Configura un punto para que parpadee.
- * 
+ *
  * @param digit Índice del dígito [0–3].
  * @param flash true para parpadear, false para mostrar estado estático.
  */

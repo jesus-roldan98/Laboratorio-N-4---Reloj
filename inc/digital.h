@@ -36,7 +36,7 @@ extern "C" {
 
 /* === Public data type declarations =============================================================================== */
 
-typedef struct DigtalOutputS * DigitalOutputT; 
+typedef struct DigitalOutputS * DigitalOutputT;
 
 typedef struct DigitalInputS * DigitalInputT;
 

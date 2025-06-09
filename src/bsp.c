@@ -42,6 +42,8 @@ void SegmentsUpdate(uint8_t value, uint8_t value_decimal_points);
  
 void DigitsTurnOn(uint8_t digit);
 
+DigitalOutputT LedRGBInit(uint8_t color);
+
 /* === Private variable definitions ================================================================================ */
 
 static const struct screen_driver_s screen_driver = {
@@ -128,26 +130,80 @@ void DigitsTurnOn(uint8_t digit) {
     
 }
 
-//void KeysInit(void) {
-//
-//   Chip_SCU_PinMuxSet(KEY_ACCEPT_PORT, KEY_ACCEPT_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_PULLUP | KEY_ACCEPT_FUNC);
-//   self -> Input4 = DigitalInputCreate(TEC_4_GPIO, TEC_4_BIT, true);
-//
-//}
 
-void LedRGBInit(void) {
+DigitalOutputT LedRGBInit(uint8_t color) {
+
+   DigitalOutputT result;
 
    Chip_SCU_PinMuxSet(PONCHO_RGB_RED_PORT, PONCHO_RGB_RED_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | PONCHO_RGB_RED_FUNC);
-   Chip_GPIO_SetPinState(LPC_GPIO_PORT, PONCHO_RGB_RED_GPIO, PONCHO_RGB_RED_BIT, false);
-   Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, PONCHO_RGB_RED_GPIO, PONCHO_RGB_RED_BIT, true);
-
+   
    Chip_SCU_PinMuxSet(PONCHO_RGB_GREEN_PORT, PONCHO_RGB_GREEN_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | PONCHO_RGB_GREEN_FUNC);
-   Chip_GPIO_SetPinState(LPC_GPIO_PORT, PONCHO_RGB_GREEN_GPIO, PONCHO_RGB_GREEN_BIT, false);
-   Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, PONCHO_RGB_GREEN_GPIO, PONCHO_RGB_GREEN_BIT, true);
-
+   
    Chip_SCU_PinMuxSet(PONCHO_RGB_BLUE_PORT, PONCHO_RGB_BLUE_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | PONCHO_RGB_BLUE_FUNC);
-   Chip_GPIO_SetPinState(LPC_GPIO_PORT, PONCHO_RGB_BLUE_GPIO, PONCHO_RGB_BLUE_BIT, false);
-   Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, PONCHO_RGB_BLUE_GPIO, PONCHO_RGB_BLUE_BIT, true);
+
+   if (color == 1) {
+   result = DigitalOutputCreate(PONCHO_RGB_RED_GPIO, PONCHO_RGB_RED_BIT);
+   }
+   
+   if (color == 2) {
+   result = DigitalOutputCreate(PONCHO_RGB_GREEN_GPIO, PONCHO_RGB_GREEN_BIT);
+   }
+
+   if (color == 3) {
+   result = DigitalOutputCreate(PONCHO_RGB_BLUE_GPIO, PONCHO_RGB_BLUE_BIT);
+   }
+
+   return result;
+
+}
+
+DigitalInputT InputsInit (uint8_t func) {
+
+   DigitalInputT result;
+  
+   Chip_SCU_PinMuxSet(KEY_F1_PORT, KEY_F1_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_F1_FUNC);
+
+   Chip_SCU_PinMuxSet(KEY_F2_PORT, KEY_F2_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_F2_FUNC);
+
+   Chip_SCU_PinMuxSet(KEY_F3_PORT, KEY_F3_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_F3_FUNC);
+
+   Chip_SCU_PinMuxSet(KEY_F4_PORT, KEY_F4_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_F4_FUNC);
+
+   Chip_SCU_PinMuxSet(KEY_ACCEPT_PORT, KEY_ACCEPT_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_ACCEPT_FUNC);
+
+   Chip_SCU_PinMuxSet(KEY_CANCEL_PORT, KEY_CANCEL_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_CANCEL_FUNC);
+   
+   if (func == 1) {
+
+      result = DigitalInputCreate(KEY_F1_GPIO, KEY_F1_BIT, false); // Crear el objeto de entrada para el boton F1
+
+   }
+   if (func == 2) {
+
+      result = DigitalInputCreate(KEY_F2_GPIO, KEY_F2_BIT, false); // Crear el objeto de entrada para el boton F2
+
+   }
+   if (func == 3) {
+
+      result = DigitalInputCreate(KEY_F3_GPIO, KEY_F3_BIT, false); // Crear el objeto de entrada para el boton F3
+
+   }
+   if (func == 4) {
+
+      result = DigitalInputCreate(KEY_F4_GPIO, KEY_F4_BIT, false); // Crear el objeto de entrada para el boton F4
+
+   }
+   if (func == 5) {
+
+      result = DigitalInputCreate(KEY_ACCEPT_GPIO, KEY_ACCEPT_BIT, false); // Crear el objeto de entrada para el boton Aceptar
+
+   }
+   if (func == 6) {
+
+      result = DigitalInputCreate(KEY_CANCEL_GPIO, KEY_CANCEL_BIT, false); // Crear el objeto de entrada para el boton Cancelar
+
+   }
+   return result;
 
 }
 
@@ -170,6 +226,15 @@ BoardT BoardCreate(void) {
       DigitsInit(); // Inicializar los pines de los digitos
       SegmentsInit(); // Inicializar los pines de los segmentos
       self->screen = ScreenCreate(4, &screen_driver);
+      self->led_red = LedRGBInit(1); // Inicializar el led rojo
+      self->led_green = LedRGBInit(2); // Inicializar el led verde
+      self->led_blue = LedRGBInit(3); // Inicializar el led azul
+      self->accept = InputsInit(5); // Inicializar el boton Aceptar
+      self->cancel = InputsInit(6); // Inicializar el boton Cancelar
+      self->set_time = InputsInit(1); // Inicializar el boton Set Time
+      self->set_alarm = InputsInit(2); // Inicializar el boton Set Alarm
+      self->decrement = InputsInit(3); // Inicializar el boton Decrement
+      self->increment = InputsInit(4); // Inicializar el boton Increment
     }
 
     return self;

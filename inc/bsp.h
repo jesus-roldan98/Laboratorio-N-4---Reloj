@@ -45,6 +45,9 @@ extern "C" {
 
 typedef struct BoardS {
     DigitalOutputT buzzer;
+    DigitalOutputT led_red;
+    DigitalOutputT led_green;
+    DigitalOutputT led_blue;
     DigitalInputT set_time;
     DigitalInputT set_alarm;
     DigitalInputT decrement;

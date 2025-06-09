@@ -33,12 +33,12 @@ SPDX-License-Identifier: MIT
 
 /* === Private data type declarations ============================================================================== */
 
-typedef struct DigtalOutputS {
+typedef struct DigitalOutputS {
 
     int port;
     int pin;
 
-};
+} DigitalOutputS;
 
 typedef struct DigitalInputS {
 
@@ -47,7 +47,7 @@ typedef struct DigitalInputS {
     bool inverted;
     bool last_state;
 
-};
+} DigitalInputS;
 
 /* === Private function declarations =============================================================================== */
 
@@ -58,17 +58,16 @@ typedef struct DigitalInputS {
 /* === Private function definitions ================================================================================ */
 // salida
 DigitalOutputT DigitalOutputCreate(int port, int pin) {
-    DigitalOutputT self = malloc(sizeof(struct DigtalOutputS));
+    DigitalOutputT self = malloc(sizeof(struct DigitalOutputS));
     if (self != NULL) {
         self->port = port;
         self->pin = pin;
 
-        Chip_GPIO_SetPinState(LPC_GPIO_PORT, self->port, self->pin, false);
+        Chip_GPIO_SetPinState(LPC_GPIO_PORT, self->port, self->pin, true);
         Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, self->port, self->pin, true);
     }
 
     return self;
-    
 }
 
 void DigitalOutputActivate(DigitalOutputT self) {
