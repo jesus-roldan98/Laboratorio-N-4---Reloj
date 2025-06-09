@@ -17,7 +17,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 SPDX-License-Identifier: MIT
 *********************************************************************************************************************/
 
-/** @file plantilla.c
+/** @file bsp.c
  ** @brief Plantilla para la creación de archivos de código fuente en lenguaje C
  **/
 
@@ -38,7 +38,7 @@ SPDX-License-Identifier: MIT
 
 void DigitsTurnOff(void);
 
-void SegmentsUpdate(uint8_t value);
+void SegmentsUpdate(uint8_t value, uint8_t value_decimal_points);
  
 void DigitsTurnOn(uint8_t digit);
 
@@ -115,10 +115,10 @@ void DigitsTurnOff(void) {
 
 }
 
-void SegmentsUpdate(uint8_t value) {
+void SegmentsUpdate(uint8_t value, uint8_t value_decimal_points) {
 
  Chip_GPIO_SetValue(LPC_GPIO_PORT, SEGMENTS_GPIO, (value & SEGMENTS_MASK)); // Actualizar los segmentos
- Chip_GPIO_SetPinState(LPC_GPIO_PORT, SEGMENT_P_GPIO, SEGMENT_P_BIT, (value & SEGMENT_P)); // Actualizar el punto decimal
+ Chip_GPIO_SetPinState(LPC_GPIO_PORT, SEGMENT_P_GPIO, SEGMENT_P_BIT, (value_decimal_points & SEGMENT_P)); // Actualizar el punto decimal
 
 }
 
@@ -126,6 +126,29 @@ void DigitsTurnOn(uint8_t digit) {
 
    Chip_GPIO_SetValue(LPC_GPIO_PORT, DIGITS_GPIO, (1 << (3 - digit)) & DIGITS_MASK); // Prender el digito correspondiente
     
+}
+
+//void KeysInit(void) {
+//
+//   Chip_SCU_PinMuxSet(KEY_ACCEPT_PORT, KEY_ACCEPT_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_PULLUP | KEY_ACCEPT_FUNC);
+//   self -> Input4 = DigitalInputCreate(TEC_4_GPIO, TEC_4_BIT, true);
+//
+//}
+
+void LedRGBInit(void) {
+
+   Chip_SCU_PinMuxSet(PONCHO_RGB_RED_PORT, PONCHO_RGB_RED_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | PONCHO_RGB_RED_FUNC);
+   Chip_GPIO_SetPinState(LPC_GPIO_PORT, PONCHO_RGB_RED_GPIO, PONCHO_RGB_RED_BIT, false);
+   Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, PONCHO_RGB_RED_GPIO, PONCHO_RGB_RED_BIT, true);
+
+   Chip_SCU_PinMuxSet(PONCHO_RGB_GREEN_PORT, PONCHO_RGB_GREEN_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | PONCHO_RGB_GREEN_FUNC);
+   Chip_GPIO_SetPinState(LPC_GPIO_PORT, PONCHO_RGB_GREEN_GPIO, PONCHO_RGB_GREEN_BIT, false);
+   Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, PONCHO_RGB_GREEN_GPIO, PONCHO_RGB_GREEN_BIT, true);
+
+   Chip_SCU_PinMuxSet(PONCHO_RGB_BLUE_PORT, PONCHO_RGB_BLUE_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | PONCHO_RGB_BLUE_FUNC);
+   Chip_GPIO_SetPinState(LPC_GPIO_PORT, PONCHO_RGB_BLUE_GPIO, PONCHO_RGB_BLUE_BIT, false);
+   Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, PONCHO_RGB_BLUE_GPIO, PONCHO_RGB_BLUE_BIT, true);
+
 }
 
 /* === Public function implementation ============================================================================== */

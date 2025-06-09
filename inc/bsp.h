@@ -38,18 +38,10 @@ extern "C" {
 #include "screen.h"
 /* === Public data type declarations =============================================================================== */
 
-/* @brief Estructura con los parametros de la placa
- * @param LedRed indica el led rojo esta encendido del led rgb
- * @param LedGreen indica el led verde esta encendido del led rgb
- * @param LedBlue indica el led azul esta encendido del led rgb
- * @param Led1  led 1
- * @param Led2  led 2
- * @param Led3  led 3
- * @param Input1 Pin de la placa para el input 1
- * @param Input2 Pin de la placa para el input 2
- * @param Input3 Pin de la placa para el input 3
- * @param Input4 Pin de la placa para el input 4
- */
+/* 
+@param BoardT tipo de dato para la placa
+
+*/
 
 typedef struct BoardS {
     DigitalOutputT buzzer;

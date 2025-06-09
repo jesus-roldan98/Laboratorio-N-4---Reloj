@@ -52,7 +52,7 @@ typedef struct ScreenS * ScreenT; //! <- tipo de dato para la pantalla
 
 typedef void (*digits_turn_off_t)(void); // Tipo de funcion para apagar los digitos
 
-typedef void (*segments_update_t)(uint8_t); // Tipo de funcion para actualizar los segmentos
+typedef void (*segments_update_t)(uint8_t, uint8_t); // Tipo de funcion para actualizar los segmentos
 
 typedef void (*digits_turn_on_t)(uint8_t); // Tipo de funcion para prender los digitos
 
@@ -68,7 +68,7 @@ typedef struct screen_driver_s {
 
 ScreenT ScreenCreate(uint8_t digits, screen_driver_t driver);
 
-void ScreenWriteBCD(ScreenT screen, uint8_t value[], uint8_t size);
+void ScreenWriteBCD(ScreenT screen, uint8_t value[], uint8_t size, uint8_t value_decimal_points[]);
 
 void ScreenRefresh(ScreenT screen);
 
@@ -78,6 +78,22 @@ void ScreenRefresh(ScreenT screen);
  */
 
 int DisplayFlashDigits(ScreenT display, uint8_t from, uint8_t to, uint16_t divisor);
+int DisplayFlashPonts(ScreenT display, uint8_t from, uint8_t to, uint16_t divisor);
+
+/**
+ * @brief Establece el estado de encendido del punto de un dígito específico.
+ * 
+ * @param digit Índice del dígito [0–3].
+ * @param on true para encender el punto, false para apagarlo.
+ */
+void DisplaySetPoint(uint8_t digit, bool on);
+
+/**
+ * @brief Configura un punto para que parpadee.
+ * 
+ * @param digit Índice del dígito [0–3].
+ * @param flash true para parpadear, false para mostrar estado estático.
+ */
 
 /* === End of conditional blocks =================================================================================== */
 
