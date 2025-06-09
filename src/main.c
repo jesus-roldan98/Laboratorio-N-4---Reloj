@@ -74,9 +74,32 @@ int main(void) {
                            
     DisplayFlashPoints(board->screen, 0, 3, 50); // displays el ultimo numero indica la velocidad de parpadeo
 
+    
     while (true) {
 
-        DigitalOutputToggle(board->led_red);
+        if(DigitalInputHasActivate(board->increment)){
+            DigitalOutputToggle(board->led_green);
+        }
+
+        if(DigitalInputHasActivate(board->decrement)){
+            DigitalOutputToggle(board->led_red);
+        }
+
+        if(DigitalInputHasActivate(board->set_time)){
+            DigitalOutputActivate(board->led_blue);
+        }else if (DigitalInputHasActivate(board->set_alarm)){
+            DigitalOutputDeactivate(board->led_blue);
+        }
+
+        if(DigitalInputHasActivate(board->cancel)){
+            DigitalOutputToggle(board->led_red);
+        }
+
+        if(DigitalInputHasActivate(board->accept)){
+            DigitalOutputToggle(board->led_green);
+        }
+
+        
 
         divisor++;
 
