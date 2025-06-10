@@ -63,41 +63,41 @@
 int main(void) {
 
     int divisor = 0;
-    uint8_t value[4] = {1, 2, 1, 2};
-    uint8_t value_decimal_points[4] = {0, 1, 0, 0}; // Ejemplo de puntos decimales
+    uint8_t value[4] = {1, 5, 1, 2};
+    uint8_t value_decimal_points[4] = {0, 1, 1, 0}; // Ejemplo de puntos decimales
 
     BoardT board = BoardCreate();
 
     ScreenWriteBCD(board->screen, value, sizeof(value), value_decimal_points); // Escribir valores en la pantalla
 
-    DisplayFlashDigits(board->screen, 1, 2, 0); // configurar desde donde hasta donde parpadean los displays, ejemplo de 0 a 3 todos los
+    DisplayFlashDigits(board->screen, 0, 2, 50); // configurar desde donde hasta donde parpadean los displays, ejemplo de 0 a 3 todos los
                            
-    DisplayFlashPoints(board->screen, 0, 3, 50); // displays el ultimo numero indica la velocidad de parpadeo
+    DisplayFlashPoints(board->screen, 1, 2, 50); // displays el ultimo numero indica la velocidad de parpadeo
 
     
     while (true) {
 
-        if(DigitalInputHasActivate(board->increment)){
-            DigitalOutputToggle(board->led_green);
-        }
-
-        if(DigitalInputHasActivate(board->decrement)){
-            DigitalOutputToggle(board->led_red);
-        }
-
-        if(DigitalInputHasActivate(board->set_time)){
-            DigitalOutputActivate(board->led_blue);
-        }else if (DigitalInputHasActivate(board->set_alarm)){
-            DigitalOutputDeactivate(board->led_blue);
-        }
-
-        if(DigitalInputHasActivate(board->cancel)){
-            DigitalOutputToggle(board->led_red);
-        }
-
-        if(DigitalInputHasActivate(board->accept)){
-            DigitalOutputToggle(board->led_green);
-        }
+      // if(DigitalInputHasActivate(board->increment)){
+      //     DigitalOutputToggle(board->led_green);
+      // }
+//
+       // if(DigitalInputHasActivate(board->decrement)){
+       //     DigitalOutputToggle(board->led_red);
+       // }
+//
+       // if(DigitalInputHasActivate(board->set_time)){
+       //     DigitalOutputActivate(board->led_blue);
+       // }else if (DigitalInputHasActivate(board->set_alarm)){
+       //     DigitalOutputDeactivate(board->led_blue);
+       // }
+//
+       // if(DigitalInputHasActivate(board->cancel)){
+       //     DigitalOutputToggle(board->led_red);
+       // }
+//
+       // if(DigitalInputHasActivate(board->accept)){
+       //     DigitalOutputToggle(board->led_green);
+       // }
 
         
 

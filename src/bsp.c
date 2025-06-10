@@ -160,44 +160,6 @@ DigitalOutputT LedRGBInit(uint8_t color) {
 
 }
 
-DigitalInputT InputsInit (uint8_t func) {
-
-   DigitalInputT result;
-  
-   
-   if (func == 1) {
-      Chip_SCU_PinMuxSet(KEY_F1_PORT, KEY_F1_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_F1_FUNC);
-      result = DigitalInputCreate(KEY_F1_GPIO, KEY_F1_BIT, false); // Crear el objeto de entrada para el boton F1
-
-   }
-   if (func == 2) {
-      Chip_SCU_PinMuxSet(KEY_F2_PORT, KEY_F2_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_F2_FUNC);
-      result = DigitalInputCreate(KEY_F2_GPIO, KEY_F2_BIT, false); // Crear el objeto de entrada para el boton F2
-
-   }
-   if (func == 3) {
-      Chip_SCU_PinMuxSet(KEY_F3_PORT, KEY_F3_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_F3_FUNC);
-      result = DigitalInputCreate(KEY_F3_GPIO, KEY_F3_BIT, false); // Crear el objeto de entrada para el boton F3
-
-   }
-   if (func == 4) {
-      Chip_SCU_PinMuxSet(KEY_F4_PORT, KEY_F4_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_F4_FUNC);
-      result = DigitalInputCreate(KEY_F4_GPIO, KEY_F4_BIT, false); // Crear el objeto de entrada para el boton F4
-
-   }
-   if (func == 5) {
-      Chip_SCU_PinMuxSet(KEY_ACCEPT_PORT, KEY_ACCEPT_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_ACCEPT_FUNC);
-      result = DigitalInputCreate(KEY_ACCEPT_GPIO, KEY_ACCEPT_BIT, false); // Crear el objeto de entrada para el boton Aceptar
-
-   }
-   if (func == 6) {
-      Chip_SCU_PinMuxSet(KEY_CANCEL_PORT, KEY_CANCEL_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_CANCEL_FUNC);
-      result = DigitalInputCreate(KEY_CANCEL_GPIO, KEY_CANCEL_BIT, false); // Crear el objeto de entrada para el boton Cancelar
-
-   }
-   return result;
-
-}
 
 /* === Public function implementation ============================================================================== */
 
@@ -222,18 +184,18 @@ BoardT BoardCreate(void) {
       self->led_green = LedRGBInit(2); // Inicializar el led verde
       self->led_blue = LedRGBInit(3); // Inicializar el led azul
 
-      Chip_SCU_PinMuxSet(KEY_F1_PORT, KEY_F1_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_F1_FUNC);
-      self->set_time = DigitalInputCreate(KEY_F1_GPIO, KEY_F1_BIT, false); // Crear el objeto de entrada para el boton F1
-      Chip_SCU_PinMuxSet(KEY_F2_PORT, KEY_F2_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_F2_FUNC);
-      self->set_alarm = DigitalInputCreate(KEY_F2_GPIO, KEY_F2_BIT, false); // Crear el objeto de entrada para el boton F2
-      Chip_SCU_PinMuxSet(KEY_F3_PORT, KEY_F3_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_F3_FUNC);
-      self->decrement = DigitalInputCreate(KEY_F3_GPIO, KEY_F3_BIT, false); // Crear el objeto de entrada para el boton F3
-      Chip_SCU_PinMuxSet(KEY_F4_PORT, KEY_F4_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_F4_FUNC);
-      self->increment= DigitalInputCreate(KEY_F4_GPIO, KEY_F4_BIT, false); // Crear el objeto de entrada para el boton F4
-      Chip_SCU_PinMuxSet(KEY_ACCEPT_PORT, KEY_ACCEPT_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_ACCEPT_FUNC);
-      self->accept= DigitalInputCreate(KEY_ACCEPT_GPIO, KEY_ACCEPT_BIT, false); // Crear el objeto de entrada para el boton Aceptar
-      Chip_SCU_PinMuxSet(KEY_CANCEL_PORT, KEY_CANCEL_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_CANCEL_FUNC);
-      self->cancel = DigitalInputCreate(KEY_CANCEL_GPIO, KEY_CANCEL_BIT, false); // Crear el objeto de entrada para el boton Cancelar
+     // Chip_SCU_PinMuxSet(KEY_F1_PORT, KEY_F1_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_F1_FUNC);
+     // self->set_time = DigitalInputCreate(KEY_F1_GPIO, KEY_F1_BIT, false); // Crear el objeto de entrada para el boton F1
+     // Chip_SCU_PinMuxSet(KEY_F2_PORT, KEY_F2_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_F2_FUNC);
+     // self->set_alarm = DigitalInputCreate(KEY_F2_GPIO, KEY_F2_BIT, false); // Crear el objeto de entrada para el boton F2
+     // Chip_SCU_PinMuxSet(KEY_F3_PORT, KEY_F3_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_F3_FUNC);
+     // self->decrement = DigitalInputCreate(KEY_F3_GPIO, KEY_F3_BIT, false); // Crear el objeto de entrada para el boton F3
+     // Chip_SCU_PinMuxSet(KEY_F4_PORT, KEY_F4_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_F4_FUNC);
+     // self->increment= DigitalInputCreate(KEY_F4_GPIO, KEY_F4_BIT, false); // Crear el objeto de entrada para el boton F4
+     // Chip_SCU_PinMuxSet(KEY_ACCEPT_PORT, KEY_ACCEPT_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_ACCEPT_FUNC);
+     // self->accept= DigitalInputCreate(KEY_ACCEPT_GPIO, KEY_ACCEPT_BIT, false); // Crear el objeto de entrada para el boton Aceptar
+     // Chip_SCU_PinMuxSet(KEY_CANCEL_PORT, KEY_CANCEL_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_CANCEL_FUNC);
+     // self->cancel = DigitalInputCreate(KEY_CANCEL_GPIO, KEY_CANCEL_BIT, false); // Crear el objeto de entrada para el boton Cancelar
 
     }
 
