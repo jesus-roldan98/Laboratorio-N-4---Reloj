@@ -85,7 +85,7 @@ void DigitalOutputToggle(DigitalOutputT self) {
     Chip_GPIO_SetPinToggle(LPC_GPIO_PORT, self->port, self->pin);
 }
 // Etrada
-DigitalInputT digitalInputCreate(int port, int pin, bool inverted) {
+DigitalInputT DigitalInputCreate(int port, int pin, bool inverted) {
     DigitalInputT self = malloc(sizeof(struct DigitalInputS));
     if (self != NULL) {
         self->port = port;
