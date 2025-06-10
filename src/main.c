@@ -77,17 +77,17 @@ int main(void) {
     
     while (true) {
 
-       if(DigitalInputHasActivate(board->accept)){
+       if(DigitalInputHasActivate(board->decrement)){
            DigitalOutputToggle(board->led_red);
        }
 
-       if(DigitalInputHasActivate(board->decrement)){
+       if(DigitalInputHasActivate(board->accept)){
            DigitalOutputToggle(board->led_green);
        }
 
-        if(DigitalInputHasActivate(board->set_time)){
+        if(DigitalInputHasActivate(board->set_alarm)){
             DigitalOutputActivate(board->led_blue);
-        }else if (DigitalInputHasActivate(board->set_alarm)){
+        }else if (DigitalInputHasActivate(board->set_time)){
             DigitalOutputDeactivate(board->led_blue);
         }
 

@@ -187,9 +187,11 @@ struct BoardS * self = malloc(sizeof(struct BoardS));
       Chip_SCU_PinMuxSet(KEY_ACCEPT_PORT, KEY_ACCEPT_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_ACCEPT_FUNC);
       self->accept= DigitalInputCreate(KEY_ACCEPT_GPIO, KEY_ACCEPT_BIT, false); // Crear el objeto de entrada para el boton Aceptar
       Chip_SCU_PinMuxSet(KEY_CANCEL_PORT, KEY_CANCEL_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_CANCEL_FUNC);
-   
+      self->cancel = DigitalInputCreate(KEY_CANCEL_GPIO, KEY_CANCEL_BIT, false); // Crear el objeto de entrada para el boton Cancelar
+      Chip_SCU_PinMuxSet(BUZZER_PORT, BUZZER_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | BUZZER_FUNC); 
+      self->buzzer = DigitalOutputCreate(BUZZER_GPIO, BUZZER_BIT); // Crear el objeto de salida para el buzzer
       }
-   
+
       return self;
 }
 

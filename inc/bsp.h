@@ -21,7 +21,7 @@ SPDX-License-Identifier: MIT
 #define BSP_H_
 
 /** @file bsp.h
- ** @brief Plantilla para la creación de archivos de de cabeceras en lenguaje C
+ ** @brief Declaraciones para la capa de soporte de hardware
  **/
 
 /* === Headers files inclusions ==================================================================================== */
@@ -38,28 +38,41 @@ extern "C" {
 #include "screen.h"
 /* === Public data type declarations =============================================================================== */
 
-/* 
-@param BoardT tipo de dato para la placa
 
-*/
+/**
+ * @struct BoardS
+ * @brief Estructura que representa todos los periféricos disponibles en la placa.
+ *
+ * Contiene referencias a salidas digitales (LEDs, buzzer), entradas digitales (botones)
+ * y una pantalla multiplexada.
+ */
 
 typedef struct BoardS {
-    DigitalOutputT buzzer;
-    DigitalOutputT led_red;
-    DigitalOutputT led_green;
-    DigitalOutputT led_blue;
-    DigitalInputT set_time;
-    DigitalInputT set_alarm;
-    DigitalInputT decrement;
-    DigitalInputT increment;
-    DigitalInputT accept;
-    DigitalInputT cancel;
-    ScreenT screen;
+    DigitalOutputT buzzer;      /**< Salida digital para el zumbador */
+    DigitalOutputT led_red;     /**< Salida digital para LED rojo */
+    DigitalOutputT led_green;   /**< Salida digital para LED verde */
+    DigitalOutputT led_blue;    /**< Salida digital para LED azul */
+    DigitalInputT set_time;     /**< Entrada digital para botón de configurar hora */
+    DigitalInputT set_alarm;    /**< Entrada digital para botón de configurar alarma */
+    DigitalInputT decrement;    /**< Entrada digital para botón de disminuir valor */
+    DigitalInputT increment;    /**< Entrada digital para botón de aumentar valor */
+    DigitalInputT accept;       /**< Entrada digital para botón de aceptar */ 
+    DigitalInputT cancel;       /**< Entrada digital para botón de cancelar */
+    ScreenT screen;             /**< Pantalla de 7 segmentos multiplexada */
 
 } const * BoardT;
 /* === Public variable declarations ================================================================================ */
 
 /* === Public function declarations ================================================================================ */
+
+
+/**
+ * @brief Inicializa los recursos de hardware y devuelve un descriptor de la placa.
+ *
+ * Configura las entradas y salidas digitales, así como la pantalla de 7 segmentos.
+ *
+ * @return BoardT Puntero constante a la estructura con los periféricos inicializados.
+ */
 
 BoardT BoardCreate(void); //! <-- Crea la estructura de la placa y asigna los pines a los leds y botones
 

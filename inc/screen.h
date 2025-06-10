@@ -37,63 +37,125 @@ extern "C" {
 
 /* === Public macros definitions =================================================================================== */
 
-#define SEGMENT_A (1 << 0)
-#define SEGMENT_B (1 << 1)
-#define SEGMENT_C (1 << 2)
-#define SEGMENT_D (1 << 3)
-#define SEGMENT_E (1 << 4)
-#define SEGMENT_F (1 << 5)
-#define SEGMENT_G (1 << 6)
-#define SEGMENT_P (1 << 7)
+/**
+ * @name Máscaras de bits para los segmentos del display de 7 segmentos
+ * @{
+ */
+
+#define SEGMENT_A (1 << 0) //!< Segmento A
+#define SEGMENT_B (1 << 1) //!< Segmento B
+#define SEGMENT_C (1 << 2) //!< Segmento C
+#define SEGMENT_D (1 << 3) //!< Segmento D
+#define SEGMENT_E (1 << 4) //!< Segmento E
+#define SEGMENT_F (1 << 5) //!< Segmento F
+#define SEGMENT_G (1 << 6) //!< Segmento G
+#define SEGMENT_P (1 << 7) //!< Punto decimal
 
 /* === Public data type declarations =============================================================================== */
 
-typedef struct ScreenS * ScreenT; //! <- tipo de dato para la pantalla
+/**
+ * @brief Tipo opaco que representa una pantalla multiplexada
+ */
 
-typedef void (*digits_turn_off_t)(void); // Tipo de funcion para apagar los digitos
+typedef struct ScreenS * ScreenT; 
 
-typedef void (*segments_update_t)(uint8_t, uint8_t); // Tipo de funcion para actualizar los segmentos
+/**
+ * @brief Puntero a función que apaga todos los dígitos del display
+ */
 
-typedef void (*digits_turn_on_t)(uint8_t); // Tipo de funcion para prender los digitos
+typedef void (*digits_turn_off_t)(void); 
+
+/**
+ * @brief Puntero a función que actualiza los segmentos de un dígito
+ * @param digit Índice del dígito a actualizar
+ * @param segments Máscara de segmentos a encender
+ */
+
+typedef void (*segments_update_t)(uint8_t, uint8_t); 
+
+/**
+ * @brief Puntero a función que enciende un dígito específico
+ * @param digit Índice del dígito a encender
+ */
+
+typedef void (*digits_turn_on_t)(uint8_t); 
+
+/**
+ * @brief Estructura que define el controlador de hardware de la pantalla
+ */
 
 typedef struct screen_driver_s {
-    digits_turn_off_t DigitsTurnOff;  // Funcion para apagar los digitos
-    segments_update_t SegmentsUpdate; // Funcion para actualizar los segmentos
-    digits_turn_on_t DigitsTurnOn;    // Funcion para prender los digitos
+    digits_turn_off_t DigitsTurnOff;   /**< Función para apagar todos los dígitos */
+    segments_update_t SegmentsUpdate; /**< Función para actualizar los segmentos de un dígito */
+    digits_turn_on_t DigitsTurnOn;    /**< Función para encender un dígito específico */
 } const * screen_driver_t;
 
 /* === Public variable declarations ================================================================================ */
 
 /* === Public function declarations ================================================================================ */
 
+
+/**
+ * @brief Crea una pantalla multiplexada con la cantidad de dígitos indicada
+ *
+ * @param digits Cantidad de dígitos de la pantalla
+ * @param driver Controlador de hardware (funciones para manejar los dígitos y segmentos)
+ * @return Objeto pantalla creado
+ */
+
 ScreenT ScreenCreate(uint8_t digits, screen_driver_t driver);
+
+/**
+ * @brief Escribe valores BCD en los dígitos de la pantalla
+ *
+ * @param screen Pantalla a actualizar
+ * @param value Vector de valores BCD a mostrar
+ * @param size Tamaño del vector de valores
+ * @param value_decimal_points Vector con información de puntos decimales encendidos (1) o apagados (0)
+ */
 
 void ScreenWriteBCD(ScreenT screen, uint8_t value[], uint8_t size, uint8_t value_decimal_points[]);
 
+/**
+ * @brief Actualiza la pantalla. Debe llamarse periódicamente (ej. en interrupción de SysTick)
+ *
+ * @param screen Pantalla a refrescar
+ */
+
 void ScreenRefresh(ScreenT screen);
 
-/*@brief Funcion que indica cuando pintar y cuando no pintar la pantalla
- * @param display puntero al descriptor de la pantalla
- * @param digit numero del digito a encender (0-3)
+/**
+ * @brief Controla el parpadeo de los dígitos dentro de un rango
+ *
+ * @param display Pantalla sobre la que se actúa
+ * @param from Índice inicial del rango
+ * @param to Índice final del rango
+ * @param divisor Factor de tiempo que define la velocidad del parpadeo
+ * @return Estado del parpadeo (1: mostrar, 0: ocultar)
  */
 
 int DisplayFlashDigits(ScreenT display, uint8_t from, uint8_t to, uint16_t divisor);
+
+/**
+ * @brief Controla el parpadeo de los puntos decimales dentro de un rango
+ *
+ * @param display Pantalla sobre la que se actúa
+ * @param from Índice inicial del rango
+ * @param to Índice final del rango
+ * @param divisor Factor de tiempo que define la velocidad del parpadeo
+ * @return Estado del parpadeo (1: mostrar, 0: ocultar)
+ */
+
 int DisplayFlashPoints(ScreenT display, uint8_t from, uint8_t to, uint16_t divisor);
 
 /**
- * @brief Establece el estado de encendido del punto de un dígito específico.
+ * @brief Configura un punto decimal para que parpadee
  *
- * @param digit Índice del dígito [0–3].
- * @param on true para encender el punto, false para apagarlo.
+ * @param digit Índice del dígito (0 a 3)
+ * @param flash true para parpadeo, false para estado estático
  */
-void DisplaySetPoint(uint8_t digit, bool on);
 
-/**
- * @brief Configura un punto para que parpadee.
- *
- * @param digit Índice del dígito [0–3].
- * @param flash true para parpadear, false para mostrar estado estático.
- */
+void DisplaySetPoint(uint8_t digit, bool on);
 
 /* === End of conditional blocks =================================================================================== */
 

@@ -34,6 +34,12 @@ extern "C" {
 
 /* === Public macros definitions =================================================================================== */
 
+/**
+ * @defgroup Display7Segment Definiciones para display 7 segmentos
+ * @brief Pines asociados a los dígitos y segmentos del display.
+ * @{
+ */
+
 #define DIGITS_GPIO 0
 
 #define DIGIT_1_PORT 0
@@ -128,6 +134,13 @@ extern "C" {
 #define SEGMENT_P_BIT 16
 
 //Definiciones de los recursos asociadas a las teclas de poncho
+
+/**
+ * @defgroup PonchoKeys Definiciones para teclas del poncho
+ * @brief Pines asociados a teclas F1–F4, Aceptar y Cancelar.
+ * @{
+ */
+
 #define KEY_F1_PORT 4
 #define KEY_F1_PIN 8
 #define KEY_F1_FUNC SCU_MODE_FUNC4
@@ -165,6 +178,13 @@ extern "C" {
 #define KEY_CANCEL_BIT 8
 
 // Definiciones de los recursos asociadas al buzzer
+
+/**
+ * @defgroup PonchoBuzzer Definiciones para buzzer
+ * @brief Pin de control del zumbador.
+ * @{
+ */
+
 #define BUZZER_PORT 2
 #define BUZZER_PIN 2
 #define BUZZER_FUNC SCU_MODE_FUNC4
@@ -172,6 +192,14 @@ extern "C" {
 #define BUZZER_BIT 2
 
 // Definiciones de los recursos asociados al LED de estado
+
+
+/**
+ * @defgroup PonchoRGB Definiciones para LED RGB
+ * @brief Pines de control para LED RGB de estado.
+ * @{
+ */
+
 #define PONCHO_RGB_RED_PORT 1
 #define PONCHO_RGB_RED_PIN 4
 #define PONCHO_RGB_RED_FUNC SCU_MODE_FUNC0

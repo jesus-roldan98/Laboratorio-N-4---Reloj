@@ -20,10 +20,10 @@ SPDX-License-Identifier: MIT
 #ifndef DIGITAL_H_
 #define DIGITAL_H_
 
-/** @file digital.h
- ** @brief Plantilla para la creación de archivos de de cabeceras en lenguaje C
- **/
-
+/**
+ * @file digital.h
+ * @brief Declaraciones para el manejo de entradas y salidas digitales.
+ */
 /* === Headers files inclusions ==================================================================================== */
 #include <stdbool.h>
 /* === Header for C++ compatibility ================================================================================ */
@@ -44,23 +44,87 @@ typedef struct DigitalInputS * DigitalInputT;
 
 /* === Public function declarations ================================================================================ */
 
+
+/**
+ * @brief Crea un objeto de salida digital.
+ *
+ * @param port Número del puerto GPIO.
+ * @param pin Número del pin dentro del puerto.
+ * @return DigitalOutputT Puntero al objeto de salida digital creado.
+ */
+
 DigitalOutputT DigitalOutputCreate(int port, int pin); //! <- crea un objeto salida
+
+/**
+ * @brief Activa (pone en nivel alto) la salida digital.
+ *
+ * @param self Objeto de salida digital.
+ */
 
 void DigitalOutputActivate(DigitalOutputT self);
 
+
+/**
+ * @brief Desactiva (pone en nivel bajo) la salida digital.
+ *
+ * @param self Objeto de salida digital.
+ */
+
 void DigitalOutputDeactivate(DigitalOutputT self);
+
+/**
+ * @brief Invierte el estado actual de la salida digital.
+ *
+ * @param self Objeto de salida digital.
+ */
 
 void DigitalOutputToggle(DigitalOutputT self);
 
-// Entadas
+/**
+ * @brief Crea un objeto de entrada digital.
+ *
+ * @param port Número del puerto GPIO.
+ * @param pin Número del pin dentro del puerto.
+ * @param inverted true si la entrada es activa en bajo, false si es activa en alto.
+ * @return DigitalInputT Puntero al objeto de entrada digital creado.
+ */
 
 DigitalInputT DigitalInputCreate(int port, int pin, bool inverted); //! <- crea un objeto entrada
 
+/**
+ * @brief Obtiene el estado actual de la entrada digital.
+ *
+ * @param self Objeto de entrada digital.
+ * @return true si la entrada está activa, false en caso contrario.
+ */
+
 bool DigitalInputGetState(DigitalInputT self);
+
+
+/**
+ * @brief Indica si el estado de la entrada ha cambiado desde la última lectura.
+ *
+ * @param self Objeto de entrada digital.
+ * @return 1 si hubo cambio, 0 si no hubo, -1 si es inválido.
+ */
 
 int DigitalInputHasChanged(DigitalInputT self);
 
+/**
+ * @brief Indica si se produjo un flanco de subida en la entrada.
+ *
+ * @param self Objeto de entrada digital.
+ * @return true si hubo flanco de subida, false en caso contrario.
+ */
+
 bool DigitalInputHasActivate(DigitalInputT self);
+
+/**
+ * @brief Indica si se produjo un flanco de bajada en la entrada.
+ *
+ * @param self Objeto de entrada digital.
+ * @return true si hubo flanco de bajada, false en caso contrario.
+ */
 
 bool DigitalInputHasDeactivate(DigitalInputT self);
 
