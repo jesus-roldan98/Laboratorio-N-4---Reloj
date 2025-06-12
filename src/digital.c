@@ -35,8 +35,9 @@ SPDX-License-Identifier: MIT
 
 typedef struct DigitalOutputS {
 
-    int port;
-    int pin;
+    int gpio;
+    int bit;
+    int state;
 
 } DigitalOutputS;
 
@@ -57,14 +58,15 @@ typedef struct DigitalInputS {
 
 /* === Private function definitions ================================================================================ */
 // salida
-DigitalOutputT DigitalOutputCreate(int port, int pin) {
+DigitalOutputT DigitalOutputCreate(int gpio, int bit, bool state) {
     DigitalOutputT self = malloc(sizeof(struct DigitalOutputS));
     if (self != NULL) {
-        self->port = port;
-        self->pin = pin;
+        self->gpio = gpio;
+        self->bit = bit;
+        self->state = state;
 
-        Chip_GPIO_SetPinState(LPC_GPIO_PORT, self->port, self->pin, true);
-        Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, self->port, self->pin, true);
+        Chip_GPIO_SetPinState(LPC_GPIO_PORT, self->gpio, self->bit, self->state);
+        Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, self->gpio, self->bit, true);
     }
 
     return self;
@@ -72,17 +74,17 @@ DigitalOutputT DigitalOutputCreate(int port, int pin) {
 
 void DigitalOutputActivate(DigitalOutputT self) {
 
-    Chip_GPIO_SetPinState(LPC_GPIO_PORT, self->port, self->pin, true);
+    Chip_GPIO_SetPinState(LPC_GPIO_PORT, self->gpio, self->bit, true);
 }
 
 void DigitalOutputDeactivate(DigitalOutputT self) {
 
-    Chip_GPIO_SetPinState(LPC_GPIO_PORT, self->port, self->pin, false);
+    Chip_GPIO_SetPinState(LPC_GPIO_PORT, self->gpio, self->bit, false);
 }
 
 void DigitalOutputToggle(DigitalOutputT self) {
 
-    Chip_GPIO_SetPinToggle(LPC_GPIO_PORT, self->port, self->pin);
+    Chip_GPIO_SetPinToggle(LPC_GPIO_PORT, self->gpio, self->bit);
 }
 // Etrada
 DigitalInputT DigitalInputCreate(int port, int pin, bool inverted) {

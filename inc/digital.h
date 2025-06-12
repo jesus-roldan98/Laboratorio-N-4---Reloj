@@ -53,7 +53,7 @@ typedef struct DigitalInputS * DigitalInputT;
  * @return DigitalOutputT Puntero al objeto de salida digital creado.
  */
 
-DigitalOutputT DigitalOutputCreate(int port, int pin); //! <- crea un objeto salida
+DigitalOutputT DigitalOutputCreate(int gpio, int bit, bool state); //! <- crea un objeto salida
 
 /**
  * @brief Activa (pone en nivel alto) la salida digital.
