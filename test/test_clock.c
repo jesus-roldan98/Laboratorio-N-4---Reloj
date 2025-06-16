@@ -43,8 +43,7 @@ SPDX-License-Identifier: MIT
 /* === Public function implementation ========================================================= */
 
 /*
--Al inicialzar el reloj esta en 00:00 y con hora invalida
--Al ajustar la hora el reloj queda en hora y es valida
+
 -Despues de n ciclos de reloj la hora avanza un segundo, diez segundos, un minuto,   
 */
 
@@ -59,6 +58,26 @@ void test_set_up_with_invalid_time (void) {
     clock_t clock = ClockCreate();
     TEST_ASSERT_FALSE (ClockGetTime(clock,  &current_time));
     TEST_ASSERT_EACH_EQUAL_UINT8 (0, current_time.bcd, 6);
+}
+
+// -Al ajustar la hora el reloj con valores correctos, queda en hora y es valida
+
+void test_set_up_with_valid_time (void) {
+   static const clock_time_t new_time = {
+        .time = {
+            .seconds = {4, 5},
+            .minutes = {3, 2},
+            .hours   = {1, 4}
+        }
+    };
+    
+    clock_time_t current_time = {0};
+
+    clock_t clock = ClockCreate();
+    
+    TEST_ASSERT_TRUE(ClockSetTime(clock, &new_time));
+    TEST_ASSERT_TRUE(ClockGetTime(clock,  &current_time));
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(new_time.bcd, current_time.bcd, 6);
 }
 
 /* === End of documentation ==================================================================== */

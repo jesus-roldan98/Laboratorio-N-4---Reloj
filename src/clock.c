@@ -29,6 +29,13 @@ SPDX-License-Identifier: MIT
 
 /* === Private data type declarations ============================================================================== */
 
+struct clock_s {
+    clock_time_t current_time;
+    bool is_valid; // Indica si la hora es válida
+
+};
+
+
 /* === Private function declarations =============================================================================== */
 
 /* === Private variable definitions ================================================================================ */
@@ -40,21 +47,21 @@ SPDX-License-Identifier: MIT
 /* === Public function implementation ============================================================================== */
 
 clock_t ClockCreate(void) {
-    //clock_t self = malloc(sizeof(struct clock_s));
-    //if (self != NULL) {
-    //    // Inicializar el reloj a 00:00:00 y hora inválida
-    //    for (int i = 0; i < 6; i++) {
-    //        self->time.bcd[i] = 0;
-    //    }
-    //}
-    //return self;
-    return NULL; // Implementación pendiente
+    static struct clock_s self[1];
+    memset(self, 0, sizeof(struct clock_s)); // Inicializar la estructura a cero
+    self->is_valid = false; // Inicializar el reloj con hora inválida
+    return self; // Implementación pendiente
 }
 
-bool ClockGetTime(clock_t clock, clock_time_t * result) {
-    (void) clock; // Evitar advertencia de variable no utilizada
-    memset(result, 0, 6);
-    return false; // Implementación pendiente
+bool ClockGetTime(clock_t self, clock_time_t * result) {
+    memcpy(result, &self->current_time, sizeof(clock_time_t));
+    return self->is_valid; // Implementación pendiente
+}
+
+bool ClockSetTime(clock_t self, const clock_time_t * new_time) {
+    self->is_valid = true; // Marca la hora como válida
+    memcpy(&self->current_time, new_time, sizeof(clock_time_t));
+    return self->is_valid;
 }
 
 /* === End of documentation ======================================================================================== */

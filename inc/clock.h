@@ -48,13 +48,17 @@ typedef union {
     uint8_t bcd [6];
 } clock_time_t;
 
-typedef struct clock_s * clock_t;/* === Public variable declarations ================================================================================ */
+typedef struct clock_s * clock_t;
+
+/* === Public variable declarations ================================================================================ */
 
 /* === Public function declarations ================================================================================ */
 
 clock_t ClockCreate (void);
 
 bool ClockGetTime(clock_t clock, clock_time_t * result);
+
+bool ClockSetTime(clock_t clock, const clock_time_t * new_time);
 
 /* === End of conditional blocks =================================================================================== */
 
