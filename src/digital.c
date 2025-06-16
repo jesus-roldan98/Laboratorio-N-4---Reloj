@@ -33,20 +33,28 @@ SPDX-License-Identifier: MIT
 
 /* === Private data type declarations ============================================================================== */
 
+/**
+ * @brief Estructura para representar una salida digital
+ */
+
 typedef struct DigitalOutputS {
 
-    int gpio;
-    int bit;
-    int state;
+    int gpio;       /**< Número de GPIO */
+    int bit;        /**< Número de bit dentro del GPIO */
+    int state;      /**< Estado actual de la salida */
 
 } DigitalOutputS;
 
+/**
+ * @brief Estructura para representar una entrada digital
+ */
+
 typedef struct DigitalInputS {
 
-    int port;
-    int pin;
-    bool inverted;
-    bool last_state;
+    int port;           /**< Número de puerto */
+    int pin;            /**< Número de pin dentro del puerto */
+    bool inverted;      /**< Indica si la lógica está invertida */
+    bool last_state;    /**< Último estado leído */
 
 } DigitalInputS;
 
@@ -57,48 +65,83 @@ typedef struct DigitalInputS {
 /* === Public variable definitions ================================================================================= */
 
 /* === Private function definitions ================================================================================ */
-// salida
-DigitalOutputT DigitalOutputCreate(int gpio, int bit, bool state) {
-    DigitalOutputT self = malloc(sizeof(struct DigitalOutputS));
+
+/* === Public function implementation ============================================================================== */
+
+DigitalOutputT DigitalOutputCreate (int gpio, int bit, bool state) {
+    DigitalOutputT self = malloc(sizeof(struct DigitalInputS));
     if (self != NULL) {
         self->gpio = gpio;
         self->bit = bit;
         self->state = state;
-
+        
         Chip_GPIO_SetPinState(LPC_GPIO_PORT, self->gpio, self->bit, self->state);
         Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, self->gpio, self->bit, true);
     }
-
     return self;
 }
+/**
+ * @brief Activa (pone en alto) la salida digital.
+ * 
+ * @param self Objeto de salida digital.
+ */
 
 void DigitalOutputActivate(DigitalOutputT self) {
 
     Chip_GPIO_SetPinState(LPC_GPIO_PORT, self->gpio, self->bit, true);
 }
 
+/**
+ * @brief Desactiva (pone en bajo) la salida digital.
+ * 
+ * @param self Objeto de salida digital.
+ */
+
 void DigitalOutputDeactivate(DigitalOutputT self) {
 
     Chip_GPIO_SetPinState(LPC_GPIO_PORT, self->gpio, self->bit, false);
 }
 
+/**
+ * @brief Cambia el estado actual de la salida digital (toggle).
+ * 
+ * @param self Objeto de salida digital.
+ */
+
 void DigitalOutputToggle(DigitalOutputT self) {
 
     Chip_GPIO_SetPinToggle(LPC_GPIO_PORT, self->gpio, self->bit);
 }
-// Etrada
+
+/**
+ * @brief Crea y configura una entrada digital.
+ * 
+ * @param port Puerto donde está conectada la entrada.
+ * @param pin Número de pin dentro del puerto.
+ * @param inverted true si la entrada es activa en bajo, false si es activa en alto.
+ * @return DigitalInputT Puntero al objeto creado, o NULL si falla la reserva de memoria.
+ */
+
 DigitalInputT DigitalInputCreate(int port, int pin, bool inverted) {
     DigitalInputT self = malloc(sizeof(struct DigitalInputS));
     if (self != NULL) {
         self->port = port;
         self->pin = pin;
         self->inverted = inverted;
-        self->last_state = false;
-
+        
         Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, self->port, self->pin, false);
+        self->last_state = DigitalInputGetState (self);
+
     }
     return self;
 }
+
+/**
+ * @brief Lee el estado actual de la entrada digital.
+ * 
+ * @param self Objeto de entrada digital.
+ * @return true si está activo, false si está inactivo.
+ */
 
 bool DigitalInputGetState(DigitalInputT self) {
     bool state = Chip_GPIO_ReadPortBit(LPC_GPIO_PORT, self->port, self->pin);
@@ -108,6 +151,13 @@ bool DigitalInputGetState(DigitalInputT self) {
     }
     return state;
 }
+
+/**
+ * @brief Verifica si la entrada cambió de estado desde la última lectura.
+ * 
+ * @param self Objeto de entrada digital.
+ * @return 1 si hubo flanco ascendente, -1 si hubo flanco descendente, 0 si no hubo cambios.
+ */
 
 int DigitalInputHasChanged(DigitalInputT self) {
     bool current_state = DigitalInputGetState(self);
@@ -124,14 +174,26 @@ int DigitalInputHasChanged(DigitalInputT self) {
     return result;
 }
 
+/**
+ * @brief Indica si se detectó un flanco ascendente (activación).
+ * 
+ * @param self Objeto de entrada digital.
+ * @return true si hubo flanco ascendente.
+ */
+
 bool DigitalInputHasActivate(DigitalInputT self) {
     return DigitalInputHasChanged(self) == 1;
 }
 
+/**
+ * @brief Indica si se detectó un flanco descendente (desactivación).
+ * 
+ * @param self Objeto de entrada digital.
+ * @return true si hubo flanco descendente.
+ */
+
 bool DigitalInputHasDeactivate(DigitalInputT self) {
     return DigitalInputHasChanged(self) == -1;
 }
-
-/* === Public function implementation ============================================================================== */
 
 /* === End of documentation ======================================================================================== */

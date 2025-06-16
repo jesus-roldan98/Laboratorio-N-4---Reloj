@@ -17,15 +17,14 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 SPDX-License-Identifier: MIT
 *********************************************************************************************************************/
 
-/** @file main.c
- ** @brief Plantilla para la creación del archivo main
+/** @file test_clock.c
+ ** @brief Plantilla para la creación del test del reloj
  **/
 
 /* === Headers files inclusions =============================================================== */
 
-#include "bsp.h"
-#include <stdbool.h>
-#include "screen.h"
+#include "unity.h"
+#include "clock.h"
 
 /* === Macros definitions ====================================================================== */
 
@@ -43,49 +42,23 @@ SPDX-License-Identifier: MIT
 
 /* === Public function implementation ========================================================= */
 
-int main(void) {
+/*
+-Al inicialzar el reloj esta en 00:00 y con hora invalida
+-Al ajustar la hora el reloj queda en hora y es valida
+-Despues de n ciclos de reloj la hora avanza un segundo, diez segundos, un minuto,   
+*/
 
-    int divisor = 0;
-    uint8_t value[4] = {1, 9, 2, 2};
-    uint8_t value_decimal_points[4] = {1, 0, 1, 0}; // Ejemplo de puntos decimales
-
-    BoardT board = BoardCreate();
-
-    ScreenWriteBCD(board->screen, value, sizeof(value), value_decimal_points); // Escribir valores en la pantalla
-
-    DisplayFlashDigits(board->screen, 0, 2, 50); // configurar desde donde hasta donde parpadean los displays, ejemplo de 0 a 3 todos los
-                           
-    DisplayFlashPoints(board->screen, 2, 3, 50); // displays el ultimo numero indica la velocidad de parpadeo
-
+// Al inicialzar el reloj esta en 00:00 y con hora invalida
+void test_set_up_with_invalid_time (void) {
     
-    while (true) {
+    clock_time_t current_time = {
+        .bcd = {1, 2, 3, 4, 5, 6},
 
-       if(DigitalInputHasActivate(board->decrement)) {
-           DigitalOutputToggle(board->led_red);
-       }
+    };
 
-       if(DigitalInputHasActivate(board->cancel)){
-           DigitalOutputToggle(board->led_green);
-       }
-
-        if(DigitalInputHasActivate(board->set_alarm)){
-            DigitalOutputActivate(board->led_blue);
-        }else if (DigitalInputHasActivate(board->accept)){
-            DigitalOutputDeactivate(board->led_blue);
-        }
-
-
-        divisor++;
-
-        if (divisor == 5) {
-            divisor = 0;
-        }
-
-        ScreenRefresh(board->screen);
-        for (int delay = 0; delay < 25000; delay++) {
-             __asm("NOP"); 
-        }
-    }
+    clock_t clock = ClockCreate();
+    TEST_ASSERT_FALSE (ClockGetTime(clock,  &current_time));
+    TEST_ASSERT_EACH_EQUAL_UINT8 (0, current_time.bcd, 6);
 }
 
 /* === End of documentation ==================================================================== */

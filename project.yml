@@ -140,6 +140,7 @@
         - -Wall
         - -Wextra
         - -Werror
+        - -pedantic
 #     :compile:
 #       '(_|-)special': # Add '-pedantic' to compilation of all files in all test executables with '_special' or '-special' in their names
 #         - -pedantic
