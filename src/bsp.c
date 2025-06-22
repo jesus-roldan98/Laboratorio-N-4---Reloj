@@ -18,7 +18,8 @@ SPDX-License-Identifier: MIT
 *********************************************************************************************************************/
 
 /** @file bsp.c
- ** @brief Plantilla para la creación de archivos de código fuente en lenguaje C
+ ** @brief Implementación de la capa de abstracción de hardware (BSP) para el reloj digital.
+ *  @details Este módulo inicializa y gestiona los periféricos físicos conectados a la placa, incluyendo display de 7 segmentos, botones y LEDs RGB.
  **/
 
 /* === Headers files inclusions ==================================================================================== */
@@ -36,11 +37,35 @@ SPDX-License-Identifier: MIT
 
 /* === Private function declarations =============================================================================== */
 
+/**
+ * @brief Apaga todos los dígitos y segmentos del display.
+ */
+
 void DigitsTurnOff(void);
+
+/**
+ * @brief Actualiza los segmentos y el punto decimal del display.
+ * 
+ * @param value Máscara de los segmentos a encender.
+ * @param value_decimal_points Estado del punto decimal.
+ */
 
 void SegmentsUpdate(uint8_t value, uint8_t value_decimal_points);
  
+/**
+ * @brief Enciende el dígito especificado.
+ * 
+ * @param digit Número de dígito (0 a 3).
+ */
+
 void DigitsTurnOn(uint8_t digit);
+
+/**
+ * @brief Inicializa el LED RGB del color especificado.
+ * 
+ * @param color Código de color (1 = rojo, 2 = verde, 3 = azul).
+ * @return Objeto de salida digital asociado al LED.
+ */
 
 DigitalOutputT LedRGBInit(uint8_t color);
 
@@ -57,6 +82,10 @@ static const struct screen_driver_s screen_driver = {
 
 /* === Private function definitions ================================================================================ */
 
+/**
+ * @brief Inicializa los pines de los dígitos del display.
+ */
+
 void DigitsInit(void) {
    Chip_SCU_PinMuxSet(DIGIT_1_PORT, DIGIT_1_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | DIGIT_1_FUNC);
    DigitalOutputCreate(DIGIT_1_GPIO, DIGIT_1_BIT, false);
@@ -70,6 +99,11 @@ void DigitsInit(void) {
    Chip_SCU_PinMuxSet(DIGIT_4_PORT, DIGIT_4_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | DIGIT_4_FUNC);
    DigitalOutputCreate(DIGIT_4_GPIO, DIGIT_4_BIT, false);
 }
+
+/**
+ * @brief Inicializa los pines de los segmentos del display.
+ */
+
 void SegmentsInit(void) {
     
    Chip_SCU_PinMuxSet(SEGMENT_A_PORT, SEGMENT_A_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | SEGMENT_A_FUNC);
@@ -142,6 +176,13 @@ DigitalOutputT LedRGBInit(uint8_t color) {
 
 }
 
+/**
+ * @brief Inicializa y configura los botones según el identificador recibido.
+ * 
+ * @param Key Número identificador del botón (1 a 6).
+ * @return Objeto DigitalInputT asociado al botón.
+ */
+
 DigitalInputT DigitalInit(uint8_t Key) {
    DigitalInputT result;
 
@@ -210,6 +251,7 @@ struct BoardS * self = malloc(sizeof(struct BoardS));
       DigitsInit(); // Inicializar los pines de los digitos
       SegmentsInit(); // Inicializar los pines de los segmentos
       self->screen = ScreenCreate(4, &screen_driver);
+
       self->led_red = LedRGBInit(1); // Inicializar el led rojo
       self->led_green = LedRGBInit(2); // Inicializar el led verde
       self->led_blue = LedRGBInit(3); // Inicializar el led azul

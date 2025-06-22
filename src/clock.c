@@ -46,7 +46,8 @@ struct clock_s {
 
 /* === Public function implementation ============================================================================== */
 
-clock_t ClockCreate(void) {
+clock_t ClockCreate(uint16_t ticks_per_second) {
+    (void)ticks_per_second; 
     static struct clock_s self[1];
     memset(self, 0, sizeof(struct clock_s)); // Inicializar la estructura a cero
     self->is_valid = false; // Inicializar el reloj con hora inválida
@@ -55,7 +56,7 @@ clock_t ClockCreate(void) {
 
 bool ClockGetTime(clock_t self, clock_time_t * result) {
     memcpy(result, &self->current_time, sizeof(clock_time_t));
-    return self->is_valid; // Implementación pendiente
+    return self->is_valid; 
 }
 
 bool ClockSetTime(clock_t self, const clock_time_t * new_time) {
@@ -64,4 +65,9 @@ bool ClockSetTime(clock_t self, const clock_time_t * new_time) {
     return self->is_valid;
 }
 
+void ClockNewTick(clock_t self) {
+
+    self -> current_time.time.seconds[0] = 1;
+
+}
 /* === End of documentation ======================================================================================== */

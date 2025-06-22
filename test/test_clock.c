@@ -28,11 +28,15 @@ SPDX-License-Identifier: MIT
 
 /* === Macros definitions ====================================================================== */
 
+#define CLOCK_TICKS_PER_SECOND 5 // Define el número de ticks del reloj para simular un segundo
+
 /* === Private data type declarations ========================================================== */
 
 /* === Private variable declarations =========================================================== */
 
 /* === Private function declarations =========================================================== */
+
+void SimulatedSeconds(clock_t clock, uint8_t seconds);
 
 /* === Public variable definitions ============================================================= */
 
@@ -40,12 +44,16 @@ SPDX-License-Identifier: MIT
 
 /* === Private function implementation ========================================================= */
 
+void SimulatedSeconds(clock_t clock, uint8_t seconds) {
+    // Simula el avance del reloj en segundos
+    for (uint8_t i = 0; i <CLOCK_TICKS_PER_SECOND * seconds; i++) {
+        ClockNewTick(clock);
+    }
+
+}
+
 /* === Public function implementation ========================================================= */
 
-/*
-
--Despues de n ciclos de reloj la hora avanza un segundo, diez segundos, un minuto,   
-*/
 
 // Al inicialzar el reloj esta en 00:00 y con hora invalida
 void test_set_up_with_invalid_time (void) {
@@ -55,7 +63,7 @@ void test_set_up_with_invalid_time (void) {
 
     };
 
-    clock_t clock = ClockCreate();
+    clock_t clock = ClockCreate(CLOCK_TICKS_PER_SECOND);
     TEST_ASSERT_FALSE (ClockGetTime(clock,  &current_time));
     TEST_ASSERT_EACH_EQUAL_UINT8 (0, current_time.bcd, 6);
 }
@@ -73,11 +81,33 @@ void test_set_up_with_valid_time (void) {
     
     clock_time_t current_time = {0};
 
-    clock_t clock = ClockCreate();
+    clock_t clock = ClockCreate(CLOCK_TICKS_PER_SECOND);
     
     TEST_ASSERT_TRUE(ClockSetTime(clock, &new_time));
     TEST_ASSERT_TRUE(ClockGetTime(clock,  &current_time));
     TEST_ASSERT_EQUAL_UINT8_ARRAY(new_time.bcd, current_time.bcd, 6);
+}
+
+// Despues de n ciclos el reloj avanza un segundo
+
+void test_clock_advance_one_second (void) {
+
+    clock_time_t current_time = {0};
+    static const clock_time_t espected_value = {
+        .time = {
+            .seconds = {1, 0},
+            .minutes = {0, 0},
+            .hours   = {0, 0}
+        }
+    };
+    clock_t clock = ClockCreate(CLOCK_TICKS_PER_SECOND);
+    
+    ClockSetTime(clock, &(clock_time_t){0});
+    SimulatedSeconds(clock, 1);
+    ClockGetTime(clock, &current_time);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(espected_value.bcd, current_time.bcd, 6);
+    TEST_ASSERT_EQUAL_MEMORY(&espected_value, &current_time, sizeof(clock_time_t));
+
 }
 
 /* === End of documentation ==================================================================== */
