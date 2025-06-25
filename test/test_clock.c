@@ -18,7 +18,11 @@ SPDX-License-Identifier: MIT
 *********************************************************************************************************************/
 
 /** @file test_clock.c
- ** @brief Plantilla para la creación del test del reloj
+ ** @brief Este archivo contiene un conjunto de pruebas unitarias desarrolladas utilizando Unity
+ * para verificar el correcto funcionamiento del módulo `clock`, incluyendo:
+ * - Configuración y validez de la hora actual.
+ * - Avance del reloj con ticks simulados.
+ * - Gestión de alarma (configuración, habilitación, coincidencia, postergación).
  **/
 
 /* === Headers files inclusions =============================================================== */
@@ -70,7 +74,10 @@ void setUp(void) {
 
 }
 
-// Al inicialzar el reloj esta en 00:00 y con hora invalida
+/**
+ * @brief Verifica que al crear el reloj, la hora inicial es inválida.
+ */
+
 void test_set_up_with_invalid_time (void) {
     
     clock_time_t current_time = {
@@ -83,7 +90,10 @@ void test_set_up_with_invalid_time (void) {
     TEST_ASSERT_EACH_EQUAL_UINT8 (0, current_time.bcd, 6);
 }
 
-// -Al ajustar la hora el reloj con valores correctos, queda en hora y es valida
+
+/**
+ * @brief Verifica que al ajustar la hora con valores válidos, el reloj refleja correctamente la hora y se vuelve válido.
+ */
 
 void test_set_up_with_valid_time (void) {
    static const clock_time_t new_time = {
@@ -101,7 +111,9 @@ void test_set_up_with_valid_time (void) {
     TEST_ASSERT_TIME (4, 5, 3, 2, 1, 4, current_time);
 }
 
-// Despues de n ciclos el reloj avanza un segundo
+/**
+ * @brief Simula 1 segundo y verifica que el reloj avanza correctamente.
+ */
 
 void test_clock_advance_one_second (void) {
 
@@ -112,6 +124,10 @@ void test_clock_advance_one_second (void) {
     TEST_ASSERT_TIME(1, 0, 0, 0, 0, 0, current_time);
 }
 
+/**
+ * @brief Simula 10 segundos y verifica el avance.
+ */
+
 void test_clock_advance_ten_seconds (void) {
 
     clock_time_t current_time = {0};
@@ -120,6 +136,10 @@ void test_clock_advance_ten_seconds (void) {
     ClockGetTime(clock, &current_time);
     TEST_ASSERT_TIME(0, 1, 0, 0, 0, 0, current_time);
 }
+
+/**
+ * @brief Simula 1 minuto y verifica la actualización de la hora.
+ */
 
 void test_clock_advance_one_minut (void) {
 
@@ -130,6 +150,10 @@ void test_clock_advance_one_minut (void) {
     TEST_ASSERT_TIME(0, 0, 1, 0, 0, 0, current_time);
 }
 
+/**
+ * @brief Simula 10 minutos y verifica la actualización.
+ */
+
 void test_clock_advance_ten_minuts (void) {
 
     clock_time_t current_time = {0};
@@ -138,6 +162,10 @@ void test_clock_advance_ten_minuts (void) {
     ClockGetTime(clock, &current_time);
     TEST_ASSERT_TIME(0, 0, 0, 1, 0, 0, current_time);
 }
+
+/**
+ * @brief Simula 1 hora y verifica el avance.
+ */
 
 void test_clock_advance_one_hour (void) {
 
@@ -148,6 +176,10 @@ void test_clock_advance_one_hour (void) {
     TEST_ASSERT_TIME(0, 0, 0, 0, 1, 0, current_time);
 }
 
+/**
+ * @brief Simula 10 horas y verifica el avance.
+ */
+
 void test_clock_advance_ten_hours (void) {
 
     clock_time_t current_time = {0};
@@ -157,6 +189,10 @@ void test_clock_advance_ten_hours (void) {
     TEST_ASSERT_TIME(0, 0, 0, 0, 0, 1, current_time);
 }
 
+/**
+ * @brief Simula 24 horas y verifica que el reloj reinicia correctamente a 00:00:00.
+ */
+
 void test_clock_retourn_time (void) {
 
     clock_time_t current_time = {0};
@@ -165,6 +201,10 @@ void test_clock_retourn_time (void) {
     ClockGetTime(clock, &current_time);
     TEST_ASSERT_TIME(0, 0, 0, 0, 0, 0, current_time);
 }
+
+/**
+ * @brief Verifica que la alarma se puede establecer y leer correctamente.
+ */
 
 void test_clock_set_alarm_time (void) {
 
@@ -183,8 +223,11 @@ void test_clock_set_alarm_time (void) {
     TEST_ASSERT_EQUAL_MEMORY(&alarm_time, &read_alarm_time, sizeof(clock_time_t));
 }
 
-//avanza un segundo y si la hora coincide devuelve true
-void test_clock_alarm_ringing_at_exact_time(void) {
+/**
+ * @brief Verifica que si la hora coincide con la alarma habilitada, se detecta correctamente.
+ */
+
+void test_clock_alarm_sound_at_exact_time(void) {
     clock_time_t alarm_time = {
         .time = {
             .seconds = {0, 0},
@@ -209,6 +252,10 @@ void test_clock_alarm_ringing_at_exact_time(void) {
 
     TEST_ASSERT_TRUE(ClockAlarmMatchTheTime(clock));
 }
+
+/**
+ * @brief Verifica que la alarma no suene si está deshabilitada, aunque la hora coincida.
+ */
 
 void test_clock_alarm_not_sound_if_disabled(void) {
     clock_time_t alarm_time = {
@@ -237,6 +284,10 @@ void test_clock_alarm_not_sound_if_disabled(void) {
     TEST_ASSERT_FALSE(ClockAlarmMatchTheTime(clock)); // No debe sonar
 }
 
+/**
+ * @brief Verifica que se puede habilitar y deshabilitar la alarma correctamente.
+ */
+
 void test_clock_alarm_enable_disable_check(void) {
     // Al inicio está deshabilitada
     TEST_ASSERT_FALSE(ClockIsAlarmEnabled(clock));
@@ -249,6 +300,10 @@ void test_clock_alarm_enable_disable_check(void) {
     ClockDisableAlarm(clock);
     TEST_ASSERT_FALSE(ClockIsAlarmEnabled(clock));
 }
+
+/**
+ * @brief Verifica que se puede posponer la alarma una cantidad arbitraria de minutos.
+ */
 
 void test_clock_postpone_alarm_by_minutes(void) {
     clock_time_t alarm_time = {
