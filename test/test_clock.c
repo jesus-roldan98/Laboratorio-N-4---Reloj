@@ -166,6 +166,109 @@ void test_clock_retourn_time (void) {
     TEST_ASSERT_TIME(0, 0, 0, 0, 0, 0, current_time);
 }
 
+void test_clock_set_alarm_time (void) {
+
+    clock_time_t alarm_time = {
+        .time = {
+            .seconds = {5, 0},
+            .minutes = {3, 0},
+            .hours   = {1, 0}
+        }
+    };
+
+    clock_time_t read_alarm_time = {0};
+
+    TEST_ASSERT_TRUE(ClockSetAlarm(clock, &alarm_time));
+    TEST_ASSERT_TRUE(ClockGetAlarm(clock, &read_alarm_time));
+    TEST_ASSERT_EQUAL_MEMORY(&alarm_time, &read_alarm_time, sizeof(clock_time_t));
+}
+
+//avanza un segundo y si la hora coincide devuelve true
+void test_clock_alarm_ringing_at_exact_time(void) {
+    clock_time_t alarm_time = {
+        .time = {
+            .seconds = {0, 0},
+            .minutes = {1, 0},
+            .hours   = {0, 0}
+        }
+    };
+
+    ClockSetTime(clock, &(clock_time_t){
+        .time = {
+            .seconds = {9, 5},
+            .minutes = {0, 0},
+            .hours   = {0, 0}
+        }
+    });
+
+    ClockSetAlarm(clock, &alarm_time);
+
+    ClockEnableAlarm(clock);
+
+    SimulatedSeconds(clock, 1); // Avanza un segundo → 00:01:00
+
+    TEST_ASSERT_TRUE(ClockAlarmMatchTheTime(clock));
+}
+
+void test_clock_alarm_not_sound_if_disabled(void) {
+    clock_time_t alarm_time = {
+        .time = {
+            .seconds = {0, 0},
+            .minutes = {1, 0},
+            .hours   = {0, 0}
+        }
+    };
+
+    // Ajustamos la hora a 00:00:59 (se reiniciará a 01:00 tras 1 segundo)
+    ClockSetTime(clock, &(clock_time_t){
+        .time = {
+            .seconds = {9, 5},
+            .minutes = {0, 0},
+            .hours   = {0, 0}
+        }
+    });
+
+    ClockSetAlarm(clock, &alarm_time);
+
+    ClockDisableAlarm(clock); // Desactivamos la alarma
+
+    SimulatedSeconds(clock, 1); // Avanzamos 1 segundo → 00:01:00
+
+    TEST_ASSERT_FALSE(ClockAlarmMatchTheTime(clock)); // No debe sonar
+}
+
+void test_clock_alarm_enable_disable_check(void) {
+    // Al inicio está deshabilitada
+    TEST_ASSERT_FALSE(ClockIsAlarmEnabled(clock));
+
+    // Habilitamos la alarma
+    ClockEnableAlarm(clock);
+    TEST_ASSERT_TRUE(ClockIsAlarmEnabled(clock));
+
+    // Deshabilitamos la alarma
+    ClockDisableAlarm(clock);
+    TEST_ASSERT_FALSE(ClockIsAlarmEnabled(clock));
+}
+
+void test_clock_postpone_alarm_by_minutes(void) {
+    clock_time_t alarm_time = {
+        .time = {
+            .seconds = {0, 0},
+            .minutes = {5, 3},  // 35 minutos
+            .hours   = {2, 1}   // 12 horas
+        }
+    };
+
+    ClockSetAlarm(clock, &alarm_time);
+    ClockPostponeAlarm(clock, 30);  // +30 min => 13:05
+
+    clock_time_t result = {0};
+    ClockGetAlarm(clock, &result);
+
+    TEST_ASSERT_TIME(0, 0, 5, 3, 2, 1, result);
+}
+
+
 /* === End of documentation ==================================================================== */
 
 /** @} End of module definition for doxygen */
