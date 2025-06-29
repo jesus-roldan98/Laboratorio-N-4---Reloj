@@ -76,6 +76,8 @@ typedef struct BoardS {
 
 BoardT BoardCreate(void); //! <-- Crea la estructura de la placa y asigna los pines a los leds y botones
 
+void SysTickInit(uint32_t ticks);
+
 /* === End of conditional blocks =================================================================================== */
 
 #ifdef __cplusplus

@@ -26,6 +26,7 @@ SPDX-License-Identifier: MIT
 #include "bsp.h"
 #include <stdbool.h>
 #include "screen.h"
+#include "clock.h"
 
 /* === Macros definitions ====================================================================== */
 
@@ -37,6 +38,9 @@ SPDX-License-Identifier: MIT
 
 /* === Public variable definitions ============================================================= */
 
+static BoardT board;
+static clock_t clock; // Variable para almacenar el reloj simulado
+
 /* === Private variable definitions ============================================================ */
 
 /* === Private function implementation ========================================================= */
@@ -45,34 +49,41 @@ SPDX-License-Identifier: MIT
 
 int main(void) {
 
-    int divisor = 0;
-    uint8_t value[4] = {1, 9, 2, 2};
-    uint8_t value_decimal_points[4] = {1, 0, 1, 0}; // Ejemplo de puntos decimales
+    board = BoardCreate(); // Crear la estructura de la placa y asignar los pines a los leds y botones
+    clock = ClockCreate(1000); // Crear el objeto reloj
 
-    BoardT board = BoardCreate();
+    int divisor = 0;
+    uint8_t value[4] = {0, 0, 0, 0};
+    uint8_t value_decimal_points[4] = {1, 1, 1, 1}; // Ejemplo de puntos decimales
+
+   
+
+    SysTickInit(1000); // Inicializar SysTick con 1000 ticks por segundo
 
     ScreenWriteBCD(board->screen, value, sizeof(value), value_decimal_points); // Escribir valores en la pantalla
 
-    DisplayFlashDigits(board->screen, 0, 2, 50); // configurar desde donde hasta donde parpadean los displays, ejemplo de 0 a 3 todos los
+    DisplayFlashDigits(board->screen, 0, 3, 0); // configurar desde donde hasta donde parpadean los displays, ejemplo de 0 a 3 todos los
                            
-    DisplayFlashPoints(board->screen, 2, 3, 50); // displays el ultimo numero indica la velocidad de parpadeo
+    DisplayFlashPoints(board->screen, 0, 3, 50); // displays el ultimo numero indica la velocidad de parpadeo
 
     
     while (true) {
 
-       if(DigitalInputHasActivate(board->decrement)) {
+       
+
+       if(DigitalInputHasActivate(board->cancel)) {
            DigitalOutputToggle(board->led_red);
        }
 
-       if(DigitalInputHasActivate(board->cancel)){
-           DigitalOutputToggle(board->led_green);
-       }
+       //if(DigitalInputHasActivate(board->cancel)){
+       //    DigitalOutputToggle(board->led_green);
+       //}
 
-        if(DigitalInputHasActivate(board->set_alarm)){
-            DigitalOutputActivate(board->led_blue);
-        }else if (DigitalInputHasActivate(board->accept)){
-            DigitalOutputDeactivate(board->led_blue);
-        }
+       // if(DigitalInputHasActivate(board->set_alarm)){
+       //     DigitalOutputActivate(board->led_blue);
+       // }else if (DigitalInputHasActivate(board->accept)){
+       //     DigitalOutputDeactivate(board->led_blue);
+       // }
 
 
         divisor++;
@@ -81,11 +92,20 @@ int main(void) {
             divisor = 0;
         }
 
-        ScreenRefresh(board->screen);
+        
         for (int delay = 0; delay < 25000; delay++) {
              __asm("NOP"); 
         }
+
+        
     }
+
+
+}
+
+void SysTick_Handler(void) {
+   ScreenRefresh(board->screen); // Llamar a la función de actualización de pantalla en cada interrupción de SysTick
+   ClockNewTick(clock); // Llamar a la función de actualización del reloj en cada interrupción de SysTick
 }
 
 /* === End of documentation ==================================================================== */

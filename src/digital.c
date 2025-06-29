@@ -75,7 +75,7 @@ DigitalOutputT DigitalOutputCreate (int gpio, int bit, bool state) {
         self->bit = bit;
         self->state = state;
         
-        Chip_GPIO_SetPinState(LPC_GPIO_PORT, self->gpio, self->bit, self->state);
+        Chip_GPIO_SetPinState(LPC_GPIO_PORT, self->gpio, self->bit, !self->state);
         Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, self->gpio, self->bit, true);
     }
     return self;

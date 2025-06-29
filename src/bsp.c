@@ -267,4 +267,21 @@ struct BoardS * self = malloc(sizeof(struct BoardS));
       return self;
 }
 
+void SysTickInit(uint32_t ticks) {
+   // Deshabilita interrupciones globales
+    __asm volatile ("cpsid i");
+
+    // Actualiza la variable SystemCoreClock según la frecuencia del sistema
+    SystemCoreClockUpdate();
+
+    // Configura el SysTick para interrumpir cada "ticks" ciclos del reloj del sistema
+    SysTick_Config(SystemCoreClock / ticks);
+
+    // Establece la prioridad de la interrupción del SysTick (menor número = mayor prioridad)
+    NVIC_SetPriority(SysTick_IRQn, (1 << __NVIC_PRIO_BITS) - 1);
+
+    // Habilita las interrupciones globales
+    __asm volatile ("cpsie i");
+}
+
 /* === End of documentation ======================================================================================== */
