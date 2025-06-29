@@ -53,15 +53,21 @@ int main(void) {
     clock = ClockCreate(1000); // Crear el objeto reloj
 
     int divisor = 0;
-    uint8_t value[4] = {0, 0, 0, 0};
-    uint8_t value_decimal_points[4] = {1, 1, 1, 1}; // Ejemplo de puntos decimales
+    
+    uint8_t value_decimal_points[4] = {0, 1, 0, 0}; // Ejemplo de puntos decimales
+    clock_time_t current_time = {
+        .time = {
+            .hours = {3, 1},     // 13
+            .minutes = {9, 5},   // 47
+            .seconds = {5, 5}    // 25
+        }
+    };
 
-   
+    ClockSetTime(clock, &current_time);  //  Establecer la hora inicial
 
     SysTickInit(1000); // Inicializar SysTick con 1000 ticks por segundo
 
-    ScreenWriteBCD(board->screen, value, sizeof(value), value_decimal_points); // Escribir valores en la pantalla
-
+    
     DisplayFlashDigits(board->screen, 0, 3, 0); // configurar desde donde hasta donde parpadean los displays, ejemplo de 0 a 3 todos los
                            
     DisplayFlashPoints(board->screen, 0, 3, 50); // displays el ultimo numero indica la velocidad de parpadeo
@@ -69,12 +75,13 @@ int main(void) {
     
     while (true) {
 
-       
+    ClockGetTime(clock, &current_time); //  Obtener hora actual
+    ScreenWriteBCD(board->screen, current_time.bcd, sizeof(current_time.bcd), value_decimal_points); // Mostrarla
 
        if(DigitalInputHasActivate(board->cancel)) {
            DigitalOutputToggle(board->led_red);
        }
-
+       
        //if(DigitalInputHasActivate(board->cancel)){
        //    DigitalOutputToggle(board->led_green);
        //}
@@ -97,7 +104,11 @@ int main(void) {
              __asm("NOP"); 
         }
 
-        
+       // ClockGetTime(clock, &current_time); // Obtener la hora actual del reloj
+       // __asm volatile ("cpsid i");
+       // ScreenWriteBCD(board->screen, value, sizeof(value), value_decimal_points); // Escribir valores en la pantalla 
+       // __asm volatile ("cpsid i");
+
     }
 
 

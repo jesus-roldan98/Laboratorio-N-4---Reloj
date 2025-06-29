@@ -40,13 +40,15 @@ SPDX-License-Identifier: MIT
 /* === Private data type declarations ============================================================================== */
 
 struct clock_s {
-    uint16_t clock_ticks; // Número de ticks por segundo
+    uint16_t clock_ticks;     // Ticks por segundo (constante, lo pasa ClockCreate)
+    uint16_t tick_counter;    // Contador interno de ticks acumulados
     clock_time_t current_time;
-    bool is_valid; // Indica si la hora es válida
+    bool is_valid;
 
-    clock_time_t alarm_time; // Hora de la alarma
+    clock_time_t alarm_time;
     bool alarm_active;
 };
+
 
 /* === Private function declarations =============================================================================== */
 
@@ -66,13 +68,15 @@ struct clock_s {
  */
 
 clock_t ClockCreate(uint16_t ticks_per_second) {
-    (void)ticks_per_second; 
     static struct clock_s self[1];
-    memset(self, 0, sizeof(struct clock_s)); // Inicializar la estructura a cero
-    self->is_valid = false; // Inicializar el reloj con hora inválida
-    self->alarm_active = false; // Inicializar la alarma como inactiva
-    return self; // Implementación pendiente
+    memset(self, 0, sizeof(struct clock_s));
+    self->is_valid = false;
+    self->alarm_active = false;
+    self->clock_ticks = ticks_per_second;  
+    self->tick_counter = 0;                
+   return self;
 }
+
 
 /**
  * @brief Obtiene la hora actual del reloj.
@@ -111,43 +115,40 @@ bool ClockSetTime(clock_t self, const clock_time_t * new_time) {
  */
 
 void ClockNewTick(clock_t self) {
+    self->tick_counter++;  
 
-    self->clock_ticks++;
-    if (self->clock_ticks == 5) {
-        self->clock_ticks = 0; // Reinicia el contador de ticks
-        self->current_time.time.seconds[0] ++; // Incrementa los segundos
+    if (self->tick_counter >= self->clock_ticks) {
+        self->tick_counter = 0;  
+
+        // Aumentar 1 segundo en formato BCD
+        self->current_time.time.seconds[0]++;
         if (self->current_time.time.seconds[0] == 10) {
-            self->current_time.time.seconds[0] = 0; // Reinicia los segundos a 0
-            self->current_time.time.seconds[1] ++; // Incrementa el dígito de los segundos
+            self->current_time.time.seconds[0] = 0;
+            self->current_time.time.seconds[1]++;
         }
         if (self->current_time.time.seconds[1] == 6) {
-            self->current_time.time.seconds[1] = 0; // Incrementa los minutos
-            self->current_time.time.minutes[0] ++; // Incrementa los minutos
+            self->current_time.time.seconds[1] = 0;
+            self->current_time.time.minutes[0]++;
         }
-
         if (self->current_time.time.minutes[0] == 10) {
-            self->current_time.time.minutes[0] = 0; // Reinicia los minutos a 0
-            self->current_time.time.minutes[1] ++; // Incrementa el dígito de los minutos
+            self->current_time.time.minutes[0] = 0;
+            self->current_time.time.minutes[1]++;
         }
-
         if (self->current_time.time.minutes[1] == 6) {
-            self->current_time.time.minutes[1] = 0; // Incrementa las horas
-            self->current_time.time.hours[0] ++; // Incrementa las horas
+            self->current_time.time.minutes[1] = 0;
+            self->current_time.time.hours[0]++;
         }
-
         if (self->current_time.time.hours[0] == 10) {
-            self->current_time.time.hours[0] = 0; // Reinicia las horas a 0
-            self->current_time.time.hours[1] ++; // Incrementa el dígito de las horas
+            self->current_time.time.hours[0] = 0;
+            self->current_time.time.hours[1]++;
         }
-
         if (self->current_time.time.hours[1] == 2 && self->current_time.time.hours[0] == 4) {
-            // Reset a 00:00:00
             self->current_time.time.hours[0] = 0;
             self->current_time.time.hours[1] = 0;
         }
     }
-    
 }
+
 
 /**
  * @brief Establece la hora deseada para la alarma.

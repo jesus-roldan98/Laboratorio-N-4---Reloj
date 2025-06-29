@@ -139,14 +139,11 @@ void ScreenWriteBCD(ScreenT self, uint8_t value[], uint8_t size, uint8_t value_d
         size = self->digits; // Limitar al tamaño de la pantalla
     }
     for (uint8_t i = 0; i < size; i++) {
-        self->value[i] = IMAGES[value[i]];
-        if (value_decimal_points[i]) {
-            self->value_decimal_points[i] = SEGMENT_P; // Asignar punto decimal si corresponde
-        } else {
+    uint8_t pos = self->digits - 1 - i;  // invertir el orden
+    self->value[pos] = IMAGES[value[i]];
+    self->value_decimal_points[i] = value_decimal_points[i] ? SEGMENT_P : 0;
+}
 
-            self->value_decimal_points[i] = 0; // No hay punto decimal
-        }
-    }
 }
 
 void ScreenRefresh(ScreenT screen) {
