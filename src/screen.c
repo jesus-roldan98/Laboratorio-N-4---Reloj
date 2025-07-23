@@ -132,19 +132,32 @@ ScreenT ScreenCreate(uint8_t digits, screen_driver_t driver) {
     return self;
 }
 
-void ScreenWriteBCD(ScreenT self, uint8_t value[], uint8_t size, uint8_t value_decimal_points[]) {
-    memset(self->value, 0, sizeof(self->value));                               // Limpiar el buffer de la pantalla
-    memset(self->value_decimal_points, 0, sizeof(self->value_decimal_points)); // Limpiar los puntos decimales
-    if (size > self->digits) {
-        size = self->digits; // Limitar al tamaño de la pantalla
+void ScreenWriteBCD(ScreenT self, const clock_time_t * time, bool show_seconds, uint8_t decimal_points[]) {
+    memset(self->value, 0, sizeof(self->value));
+    memset(self->value_decimal_points, 0, sizeof(self->value_decimal_points));
+
+    uint8_t digits[4];
+
+    if (show_seconds) {
+        // Formato MM:SS
+        digits[0] = time->time.minutes[1];  // decena de minutos
+        digits[1] = time->time.minutes[0];  // unidad de minutos
+        digits[2] = time->time.seconds[1];  // decena de segundos
+        digits[3] = time->time.seconds[0];  // unidad de segundos
+    } else {
+        // Formato HH:MM
+        digits[0] = time->time.hours[1];    // decena de horas
+        digits[1] = time->time.hours[0];    // unidad de horas
+        digits[2] = time->time.minutes[1];  // decena de minutos
+        digits[3] = time->time.minutes[0];  // unidad de minutos
     }
-    for (uint8_t i = 0; i < size; i++) {
-    uint8_t pos = self->digits - 1 - i;  // invertir el orden
-    self->value[pos] = IMAGES[value[i]];
-    self->value_decimal_points[i] = value_decimal_points[i] ? SEGMENT_P : 0;
+
+    for (uint8_t i = 0; i < 4; i++) {
+        self->value[i] = IMAGES[digits[i]];
+        self->value_decimal_points[i] = decimal_points[i] ? SEGMENT_P : 0;
+    }
 }
 
-}
 
 void ScreenRefresh(ScreenT screen) {
     uint8_t segments = screen->value[screen->current_digit];

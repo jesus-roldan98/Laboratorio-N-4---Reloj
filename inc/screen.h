@@ -28,6 +28,7 @@ SPDX-License-Identifier: MIT
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "clock.h"
 
 /* === Header for C++ compatibility ================================================================================ */
 
@@ -114,7 +115,7 @@ ScreenT ScreenCreate(uint8_t digits, screen_driver_t driver);
  * @param value_decimal_points Vector con información de puntos decimales encendidos (1) o apagados (0)
  */
 
-void ScreenWriteBCD(ScreenT screen, uint8_t value[], uint8_t size, uint8_t value_decimal_points[]);
+void ScreenWriteBCD(ScreenT self, const clock_time_t * time, bool show_seconds, uint8_t decimal_points[]);
 
 /**
  * @brief Actualiza la pantalla. Debe llamarse periódicamente (ej. en interrupción de SysTick)
