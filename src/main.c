@@ -34,7 +34,7 @@ SPDX-License-Identifier: MIT
 
 typedef enum {
     STATE_CLOCK_INIT,        // Estado inicial: inicialización del reloj
-    STATE_NORMAL,         // Estado principal: mostrar hora actual
+    STATE_NORMAL,            // Estado principal: mostrar hora actual
     STATE_SET_HOURS,         // Estado para configurar horas
     STATE_SET_MINUTES,       // Estado para configurar minutos
     STATE_SET_ALARM_HOURS,   // Configurar alarma - horas
@@ -52,115 +52,147 @@ typedef enum {
 static BoardT board;
 static clock_t clock; // Variable para almacenar el reloj simulado
 static clock_state_t state;
-
+static uint32_t blink_counter = 0;  // Contador para controlar el parpadeo
 
 /* === Private function implementation ========================================================= */
 
 void ClockStates(clock_state_t mode) {
-    
+
     state = mode;
-   
-        switch (state) {
-        case STATE_CLOCK_INIT: 
 
-            DisplayFlashDigits(board->screen, 0, 3, 50);
-            DisplayFlashPoints(board->screen, 0, 3, 0);
+    switch (state) {
+    case STATE_CLOCK_INIT:
 
-            break;
-        
+        DisplayFlashDigits(board->screen, 0, 3, 100);
+        DisplayFlashPoints(board->screen, 0, 3, 0);
 
-        case STATE_NORMAL:
-        
-            DisplayFlashDigits(board->screen, 0, 0, 0);
-            DisplayFlashPoints(board->screen, 1, 1, 50);
-            break; 
-        
-        case STATE_SET_HOURS:
-            
-            DisplayFlashDigits(board->screen, 0, 1, 50);
+        break;
 
-            break;
+    case STATE_NORMAL:
 
-        case STATE_SET_MINUTES:
-            
-            DisplayFlashDigits(board->screen, 2, 3, 50);
-            
-            break;
+        DisplayFlashDigits(board->screen, 0, 0, 0);
+        DisplayFlashPoints(board->screen, 0, 0, 0);
+        break;
 
-        case STATE_SET_ALARM_HOURS:
-            DisplayFlashDigits(board->screen, 0, 1, 50);
-            break;
+    case STATE_SET_HOURS:
 
-        case STATE_SET_ALARM_MINUTES:
-            
-            DisplayFlashDigits(board->screen, 2, 3, 50);
+        DisplayFlashDigits(board->screen, 0, 1, 50);
+        DisplayFlashPoints(board->screen, 0, 3, 0);
+        break;
 
-            break;
+    case STATE_SET_MINUTES:
+
+        DisplayFlashDigits(board->screen, 2, 3, 50);
+        DisplayFlashPoints(board->screen, 0, 3, 0);
+        break;
+
+    case STATE_SET_ALARM_HOURS:
+        DisplayFlashDigits(board->screen, 0, 1, 50);
+        break;
+
+    case STATE_SET_ALARM_MINUTES:
+
+        DisplayFlashDigits(board->screen, 2, 3, 50);
+
+        break;
     }
+}
+
+void UpBCDAdjusted(uint8_t numero[2], bool is_hours) {
+    uint8_t temp[2] = {numero[1], numero[0]}; // Invertimos para trabajar
     
+    // Incrementamos como decimal normal
+    uint16_t value = temp[0] * 10 + temp[1];
+    value = (value + 1) % (is_hours ? 24 : 60);
     
+    // Convertimos de vuelta a BCD invertido
+    temp[0] = value / 10; // Decenas
+    temp[1] = value % 10; // Unidades
+    
+    numero[0] = temp[1]; // Restauramos orden original
+    numero[1] = temp[0];
 }
 
-void UpBCD (uint8_t numero [2], const uint8_t limite [2]) {
-
-    numero [1]++;
-    if (numero[1] > 9) {
-        numero[1] = 0;
-        numero[0]++;
-    }
-    if ((numero [0] == limite [0]) && (numero [1] == limite [1])) {
-        numero[0] = 0;
-        numero[1] = 0;
-    }
+// Función para decremento ajustado
+void DownBCDAdjusted(uint8_t numero[2], bool is_hours) {
+    uint8_t temp[2] = {numero[1], numero[0]}; // Invertimos
+    
+    uint16_t value = temp[0] * 10 + temp[1];
+    value = (value == 0) ? (is_hours ? 23 : 59) : value - 1;
+    
+    temp[0] = value / 10;
+    temp[1] = value % 10;
+    
+    numero[0] = temp[1];
+    numero[1] = temp[0];
 }
 
-void DownBCD(uint8_t numero[2], const uint8_t limite[2]) {
-
-    if (numero[1] == 0) {
-        numero[1] = 9;
-
-        if (numero[0] == 0) {
-            numero[0] = 9;
-        } else {
-            numero[0]--;
-        }
-    } else {
-        numero[1]--;
-    }
-
-    if ((numero[0] == limite[0]) && (numero[1] == limite[1])) {
-        numero[0] = 0;
-        numero[1] = 0;
-    }
-}
 
 
 /* === Public function implementation ========================================================= */
 
 int main(void) {
 
-    board = BoardCreate(); // Crear la estructura de la placa y asignar los pines a los leds y botones
+    clock_time_t time_clock;
+
+    board = BoardCreate();     // Crear la estructura de la placa y asignar los pines a los leds y botones
     clock = ClockCreate(1000); // Crear el objeto reloj
     int divisor = 0;
     
-   
+    ClockGetTime(clock, &time_clock); // Obtener la hora actual del reloj
 
-    SysTickInit(1000); // Inicializar SysTick con 1000 ticks por segundo
-
-    ClockStates(STATE_CLOCK_INIT); // Cambiar al estado de inicialización del reloj
-
+    SysTickInit(1000);
+    ClockStates(STATE_CLOCK_INIT);
 
     while (true) {
 
-       //if(DigitalInputHasActivate(board->accept)){
-       //    if (state == STATE_NORMAL) {
-       //     if ()
-       //    }
-//
-       //}
+        if (DigitalInputHasActivate(board->set_time)) {
 
-      
+            ClockStates(STATE_SET_MINUTES); // Cambiar al estado de configuración de horas
+            ClockGetTime(clock, &time_clock); // Obtener la hora actual del reloj
+        }
 
+        if (DigitalInputHasActivate(board->accept)) {
+
+            if (state == STATE_SET_MINUTES) {
+
+                ClockStates(STATE_SET_HOURS);
+            }
+
+            else if (state == STATE_SET_HOURS) {
+                time_clock.time.seconds[0] = 0;
+                time_clock.time.seconds[1] = 0;
+                ClockSetTime(clock, &time_clock);
+                ClockStates(STATE_NORMAL); // Cambiar al estado normal
+            }
+        }
+
+        if (DigitalInputHasActivate(board->increment)) {
+
+            if (state == STATE_SET_HOURS) {
+
+                UpBCDAdjusted(time_clock.time.hours, true);
+                ScreenWriteBCD(board->screen, &time_clock, false, (uint8_t[]){0, 0, 0, 0});
+            } else if (state == STATE_SET_MINUTES) {
+
+                UpBCDAdjusted(time_clock.time.minutes, false);
+                ScreenWriteBCD(board->screen, &time_clock, false, (uint8_t[]){0, 0, 0, 0});
+            }
+        }
+
+        if (DigitalInputHasActivate(board->decrement)) {
+            
+            if (state == STATE_SET_HOURS) {
+                
+                DownBCDAdjusted(time_clock.time.hours, true);
+                ScreenWriteBCD(board->screen, &time_clock, false, (uint8_t[]){0, 0, 0, 0});
+            } else if (state == STATE_SET_MINUTES) {
+
+                DownBCDAdjusted(time_clock.time.minutes, false);
+                ScreenWriteBCD(board->screen, &time_clock, false, (uint8_t[]){0, 0, 0, 0});
+            }
+
+        }
 
         divisor++;
 
@@ -168,33 +200,34 @@ int main(void) {
             divisor = 0;
         }
 
-        
-        for (int delay = 0; delay < 25000; delay++) {
-             __asm("NOP"); 
-        }
+        for (int delay = 0; delay < 25000; delay++) { __asm("NOP"); }
     }
-
-
 }
 
 void SysTick_Handler(void) {
-    //static uint16_t counter = 0;
-   // uint8_t hour{4};
+    
+    clock_time_t current_time;
+    static bool show_dot = true;  // Estado del punto decimal
+    uint8_t decimal_points[4] = {0, 0, 0, 0};
 
+    blink_counter++;
+    // Cambiar estado del punto cada segundo (1000 ticks)
+    if (blink_counter >= 1000) {
+        blink_counter = 0;
+        show_dot = !show_dot;  // Alternar estado del punto
+    }
 
     ScreenRefresh(board->screen); // Llamar a la función de actualización de pantalla en cada interrupción de SysTick
-    ClockNewTick(clock); // Llamar a la función de actualización del reloj en cada interrupción de SysTick
-    clock_time_t init_time = {
-    .time.hours = {0, 0},
-    .time.minutes = {0, 0},
-    .time.seconds = {0, 0}
-};
-    if (state == STATE_CLOCK_INIT) {
-        
-        static uint8_t decimal_points[4] = {0, 0, 0, 0};
+    ClockNewTick(clock);          // Llamar a la función de actualización del reloj en cada interrupción de SysTick
+    ClockGetTime(clock, &current_time); // Obtener la hora actual del reloj
+    
+    if (state == STATE_NORMAL || state == STATE_CLOCK_INIT) {
 
-        // Actualizar el display en estado INIT (esto lo hace parpadear)
-        ScreenWriteBCD(board->screen, &init_time, false, decimal_points);
+        if (state == STATE_NORMAL) {
+            decimal_points[1] = show_dot ? 1 : 0;
+        
+        }
+        ScreenWriteBCD(board->screen, &current_time, false, decimal_points);
     }
 
 }

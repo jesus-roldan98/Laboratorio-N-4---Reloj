@@ -153,7 +153,11 @@ void ScreenWriteBCD(ScreenT self, const clock_time_t * time, bool show_seconds, 
     }
 
     for (uint8_t i = 0; i < 4; i++) {
+        if (digits[i] <= 9) {
         self->value[i] = IMAGES[digits[i]];
+        } else {
+        self->value[i] = 0; // o algún patrón de error si querés
+        }
         self->value_decimal_points[i] = decimal_points[i] ? SEGMENT_P : 0;
     }
 }

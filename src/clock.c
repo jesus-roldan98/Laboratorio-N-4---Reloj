@@ -74,7 +74,7 @@ clock_t ClockCreate(uint16_t ticks_per_second) {
     self->alarm_active = false;
     self->clock_ticks = ticks_per_second;  
     self->tick_counter = 0;                
-   return self;
+    return self;
 }
 
 
@@ -102,6 +102,7 @@ bool ClockGetTime(clock_t self, clock_time_t * result) {
 bool ClockSetTime(clock_t self, const clock_time_t * new_time) {
     self->is_valid = true; // Marca la hora como válida
     memcpy(&self->current_time, new_time, sizeof(clock_time_t));
+    self->tick_counter = 0; // Reinicia el contador de ticks al establecer nueva hora
     return self->is_valid;
 }
 
@@ -116,8 +117,9 @@ bool ClockSetTime(clock_t self, const clock_time_t * new_time) {
 
 void ClockNewTick(clock_t self) {
     self->tick_counter++;  
-
-    if (self->tick_counter >= self->clock_ticks) {
+    
+    // Solo incrementar el tiempo si la hora es válida
+    if (self->is_valid && self->tick_counter >= self->clock_ticks) {
         self->tick_counter = 0;  
 
         // Aumentar 1 segundo en formato BCD
