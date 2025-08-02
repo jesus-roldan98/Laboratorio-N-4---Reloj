@@ -234,29 +234,23 @@ bool ClockIsAlarmEnabled(clock_t self) {
  */
 
 void ClockPostponeAlarm(clock_t self, uint8_t minutes) {
-    if (!self->alarm_active || minutes == 0) {
-        return; // No hace nada si la alarma no está activa o no se desea posponer
-    }
+    if (!self->alarm_active || minutes == 0) return;
 
-    // Convertir BCD a binario para los minutos
-    uint8_t min_bcd = self->alarm_time.time.minutes[0] + self->alarm_time.time.minutes[1] * 10;
-    uint8_t hour_bcd = self->alarm_time.time.hours[0] + self->alarm_time.time.hours[1] * 10;
+    // Convertir BCD a binario
+    uint8_t mins = self->alarm_time.time.minutes[0] + self->alarm_time.time.minutes[1] * 10;
+    uint8_t hrs = self->alarm_time.time.hours[0] + self->alarm_time.time.hours[1] * 10;
 
     // Sumar minutos
-    min_bcd += minutes;
+    mins += minutes;
+    hrs += mins / 60;
+    mins %= 60;
+    hrs %= 24;
 
-    // Ajustar horas si se excede de 59 minutos
-    hour_bcd += min_bcd / 60;
-    min_bcd %= 60;
-
-    // Ajustar horas para que no supere 23
-    hour_bcd %= 24;
-
-    // Volver a convertir a BCD
-    self->alarm_time.time.minutes[1] = min_bcd / 10;
-    self->alarm_time.time.minutes[0] = min_bcd % 10;
-    self->alarm_time.time.hours[1] = hour_bcd / 10;
-    self->alarm_time.time.hours[0] = hour_bcd % 10;
+    // Convertir de vuelta a BCD
+    self->alarm_time.time.minutes[0] = mins % 10;
+    self->alarm_time.time.minutes[1] = mins / 10;
+    self->alarm_time.time.hours[0] = hrs % 10;
+    self->alarm_time.time.hours[1] = hrs / 10;
 }
 
 /* === End of documentation ======================================================================================== */

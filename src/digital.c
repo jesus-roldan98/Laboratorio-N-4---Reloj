@@ -88,7 +88,7 @@ DigitalOutputT DigitalOutputCreate (int gpio, int bit, bool state) {
 
 void DigitalOutputActivate(DigitalOutputT self) {
 
-    Chip_GPIO_SetPinState(LPC_GPIO_PORT, self->gpio, self->bit, true);
+    Chip_GPIO_SetPinState(LPC_GPIO_PORT, self->gpio, self->bit, false);
 }
 
 /**
@@ -99,7 +99,7 @@ void DigitalOutputActivate(DigitalOutputT self) {
 
 void DigitalOutputDeactivate(DigitalOutputT self) {
 
-    Chip_GPIO_SetPinState(LPC_GPIO_PORT, self->gpio, self->bit, false);
+    Chip_GPIO_SetPinState(LPC_GPIO_PORT, self->gpio, self->bit, true);
 }
 
 /**
