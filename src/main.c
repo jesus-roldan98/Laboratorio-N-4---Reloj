@@ -179,6 +179,16 @@ int main(void) {
                     CancelAlarm(); // Cancelar la alarma si está activa
                 }
             }
+            else if (state == STATE_SET_HOURS || state == STATE_SET_MINUTES) {
+                if (ClockGetTime(clock, &time_clock)) {
+                    ClockStates(STATE_NORMAL);
+                } else {
+                    ClockStates(STATE_CLOCK_INIT); 
+                }
+            } else if (state == STATE_SET_ALARM_HOURS || state == STATE_SET_ALARM_MINUTES) {
+
+                ClockStates(STATE_NORMAL);
+            }
         }
 
         if (DigitalInputHasActivate(board->set_time)) {
@@ -224,7 +234,11 @@ int main(void) {
 
             else if (state == STATE_NORMAL) {
 
-                
+                if (alarm_active) {
+
+                    ClockPostponeAlarm(clock, 5);
+                    CancelAlarm();
+                }
 
     
             }
