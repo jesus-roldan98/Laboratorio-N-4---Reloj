@@ -18,7 +18,9 @@ SPDX-License-Identifier: MIT
 *********************************************************************************************************************/
 
 /** @file main.c
- ** @brief Plantilla para la creación del archivo main
+ ** @brief Implementación principal del reloj digital con alarma
+ ** @author Roldan JesusAlejandro
+ ** @date Agosto 2025
  **/
 
 /* === Headers files inclusions =============================================================== */
@@ -31,6 +33,11 @@ SPDX-License-Identifier: MIT
 /* === Macros definitions ====================================================================== */
 
 /* === Private data type declarations ========================================================== */
+
+/**
+ * @enum clock_state_t
+ * @brief Estados de la máquina de estados del reloj
+ */
 
 typedef enum {
     STATE_CLOCK_INIT,        // Estado inicial: inicialización del reloj
@@ -50,13 +57,19 @@ typedef enum {
 
 /* === Private variable definitions ============================================================ */
 
-static BoardT board;
-static clock_t clock; // Variable para almacenar el reloj simulado
-static clock_state_t state;
-static uint32_t blink_counter = 0;  // Contador para controlar el parpadeo
-static bool alarm_active = false; // Variable para controlar el estado de la alarma
+static BoardT board;                     ///< Estructura de la placa
+static clock_t clock;                    ///< Variable para almacenar el reloj simulado
+static clock_state_t state;              ///< Estado actual del reloj
+static uint32_t blink_counter = 0;       ///< Contador para controlar el parpadeo
+static bool alarm_active = false;        ///< Estado de la alarma
+static bool show_dot = true;             ///< Control para mostrar/ocultar puntos
 
 /* === Private function implementation ========================================================= */
+
+/**
+ * @brief Maneja los diferentes estados del reloj
+ * @param mode Estado actual del reloj
+ */
 
 void ClockStates(clock_state_t mode) {
 
@@ -102,6 +115,12 @@ void ClockStates(clock_state_t mode) {
     }
 }
 
+/**
+ * @brief Incrementa un número BCD con ajuste para horas o minutos
+ * @param numero Array de 2 elementos con el número BCD (unidades, decenas)
+ * @param is_hours Indica si es un valor de horas (ajusta a 23) o minutos (ajusta a 59)
+ */
+
 void UpBCDAdjusted(uint8_t numero[2], bool is_hours) {
     uint8_t temp[2] = {numero[1], numero[0]}; // Invertimos para trabajar
     
@@ -117,7 +136,12 @@ void UpBCDAdjusted(uint8_t numero[2], bool is_hours) {
     numero[1] = temp[0];
 }
 
-// Función para decremento ajustado
+/**
+ * @brief Decrementa un número BCD con ajuste para horas o minutos
+ * @param numero Array de 2 elementos con el número BCD (unidades, decenas)
+ * @param is_hours Indica si es un valor de horas (ajusta a 23) o minutos (ajusta a 59)
+ */
+
 void DownBCDAdjusted(uint8_t numero[2], bool is_hours) {
     uint8_t temp[2] = {numero[1], numero[0]}; // Invertimos
     
@@ -131,6 +155,10 @@ void DownBCDAdjusted(uint8_t numero[2], bool is_hours) {
     numero[1] = temp[0];
 }
 
+/**
+ * @brief Maneja la activación de la alarma
+ */
+
 void HandleAlarm(void) {
     // Verificar si debemos activar la alarma
     if (!alarm_active && ClockIsAlarmEnabled(clock) && ClockAlarmMatchTheTime(clock) && (state == STATE_NORMAL)) {
@@ -140,6 +168,10 @@ void HandleAlarm(void) {
     
     // La alarma permanecerá activa hasta que el usuario la cancele
 }
+
+/**
+ * @brief Cancela la alarma activa
+ */
 
 void CancelAlarm(void) {
     if (alarm_active) {
@@ -151,6 +183,11 @@ void CancelAlarm(void) {
 
 
 /* === Public function implementation ========================================================= */
+
+/**
+ * @brief Función principal del programa
+ * @return int Siempre retorna 0 (no utilizado en sistemas embebidos)
+ */
 
 int main(void) {
 
@@ -212,6 +249,7 @@ int main(void) {
             } 
             
             else if (state == STATE_SET_HOURS) {
+
                 time_clock.time.seconds[0] = 0;
                 time_clock.time.seconds[1] = 0;
                 ClockSetTime(clock, &time_clock);
@@ -230,9 +268,8 @@ int main(void) {
                 ClockSetAlarm(clock, &time_alarm);
                 ClockStates(STATE_NORMAL);
                 ClockEnableAlarm(clock);
-            }
 
-            else if (state == STATE_NORMAL) {
+            }else if(state == STATE_NORMAL) {
 
                 if (alarm_active) {
 
@@ -297,9 +334,14 @@ int main(void) {
     }
 }
 
+/**
+ * @brief Manejador de interrupción del SysTick
+ * @details Se ejecuta periódicamente para actualizar el reloj y la pantalla
+ */
+
 void SysTick_Handler(void) {
+    
     clock_time_t current_time;
-    static bool show_dot = true;
     uint8_t decimal_points[4] = {0, 0, 0, 0};
 
     blink_counter++;
