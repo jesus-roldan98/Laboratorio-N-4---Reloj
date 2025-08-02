@@ -321,6 +321,8 @@ void SysTick_Handler(void) {
     if (state == STATE_NORMAL || state == STATE_CLOCK_INIT) {
         if (state == STATE_NORMAL) {
             decimal_points[1] = show_dot ? 1 : 0;
+        }else {
+            decimal_points[1] = 1; // No mostrar punto decimal en el estado de inicialización
         }
         decimal_points[3] = ClockIsAlarmEnabled(clock) ? 1 : 0;
         ScreenWriteBCD(board->screen, &current_time, false, decimal_points);
