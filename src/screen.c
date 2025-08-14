@@ -164,15 +164,18 @@ void ScreenWriteBCD(ScreenT self, const clock_time_t * time, bool show_seconds, 
 
 
 void ScreenRefresh(ScreenT screen) {
-    uint8_t segments = screen->value[screen->current_digit];
-    uint8_t points = screen->value_decimal_points[screen->current_digit];
-
     screen->driver->DigitsTurnOff();
-    screen->current_digit = (screen->current_digit + 1) % screen->digits; // Incrementar el digito actual
-    segments = DisplayFlickerDigits(screen);                              // Obtener los segmentos del digito actual
-    points = DisplayFlickerPoints(screen);                                // Obtener los puntos del digito actual
-    screen->driver->SegmentsUpdate(segments, points);                     // Actualizar los segmentos de la pantalla
-    screen->driver->DigitsTurnOn(screen->current_digit);                  // Apagar el digito actual
+
+    screen->current_digit = (screen->current_digit + 1) % screen->digits;
+
+    uint8_t segments = DisplayFlickerDigits(screen);
+    uint8_t points = DisplayFlickerPoints(screen);
+
+    // Actualizar primero los segmentos y puntos
+    screen->driver->SegmentsUpdate(segments, points);
+
+    // Encender el nuevo dígito inmediatamente
+    screen->driver->DigitsTurnOn(screen->current_digit);
 }
 
 int DisplayFlashDigits(ScreenT display, uint8_t from, uint8_t to, uint16_t divisor) {
