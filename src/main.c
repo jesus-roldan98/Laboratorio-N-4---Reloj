@@ -447,17 +447,20 @@ static void vClockTask(void *pvParameters) {
 static void vInactivityTask(void *pvParameters) {
     for (;;) {
         TickType_t now = xTaskGetTickCount();
+        
+        // Solo considerar estados de edición
         if ((state == STATE_SET_MINUTES || state == STATE_SET_HOURS ||
              state == STATE_SET_ALARM_MINUTES || state == STATE_SET_ALARM_HOURS) &&
             (now - last_input_tick >= pdMS_TO_TICKS(INACTIVITY_TIMEOUT_MS))) {
             
-            // Enviar evento CANCEL para descartar cambios
+            // Enviar evento CANCEL solo si la cola no está llena
             app_event_t ev = { .type = EV_CANCEL };
             xQueueSend(xEvtQ, &ev, 0);
             
-            // Reiniciamos el contador para no enviar múltiples eventos
+            // Actualizamos last_input_tick para evitar enviar continuamente
             last_input_tick = now;
         }
+
         vTaskDelay(pdMS_TO_TICKS(100)); // chequear cada 100 ms
     }
 }
