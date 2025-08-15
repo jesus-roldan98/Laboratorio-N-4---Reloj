@@ -37,6 +37,8 @@ SPDX-License-Identifier: MIT
 
 /* === Macros definitions ====================================================================== */
 
+#define INACTIVITY_TIMEOUT_MS 30000      ///< 30 segundos
+
 /* === Private data type declarations ========================================================== */
 
 /**
