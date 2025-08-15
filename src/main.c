@@ -34,10 +34,8 @@ SPDX-License-Identifier: MIT
 #include "clock.h"
 #include "screen.h"
 #include "digital.h"
-//hasta aqui funciona
-/* === Macros definitions ====================================================================== */
 
-#define INACTIVITY_TIMEOUT_MS 30000      ///< 30 segundos
+/* === Macros definitions ====================================================================== */
 
 /* === Private data type declarations ========================================================== */
 
