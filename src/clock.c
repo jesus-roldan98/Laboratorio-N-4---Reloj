@@ -47,6 +47,7 @@ struct clock_s {
 
     clock_time_t alarm_time;
     bool alarm_active;
+    bool init_mode;
 };
 
 
@@ -251,6 +252,27 @@ void ClockPostponeAlarm(clock_t self, uint8_t minutes) {
     self->alarm_time.time.minutes[1] = mins / 10;
     self->alarm_time.time.hours[0] = hrs % 10;
     self->alarm_time.time.hours[1] = hrs / 10;
+}
+
+/**
+ * @brief Cancela el ajuste de hora.
+ *
+ * Si es la primera vez que se enciende el reloj (hora inválida),
+ * pone la hora en 00:00 y activa el modo init (parpadeo de 00:00).
+ *
+ * @param self Instancia del reloj.
+ */
+void ClockCancelSetTime(clock_t self) {
+    if (!self->is_valid) {
+        // Primer encendido: poner la hora en 00:00
+        memset(&self->current_time, 0, sizeof(clock_time_t));
+        self->tick_counter = 0;
+        self->init_mode = true;   // Activar modo init
+        // is_valid sigue en false, para que el reloj sepa que aún no se configuró
+    } else {
+        // Si ya estaba válida, solo salir del modo seteo
+        self->init_mode = false;
+    }
 }
 
 /* === End of documentation ======================================================================================== */

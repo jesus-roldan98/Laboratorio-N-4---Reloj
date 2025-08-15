@@ -175,6 +175,8 @@ bool ClockIsAlarmEnabled(clock_t self);
 
 void ClockPostponeAlarm(clock_t self, uint8_t minutes);
 
+void ClockCancelSetTime(clock_t self);
+
 /* === End of conditional blocks =================================================================================== */
 
 #ifdef __cplusplus

@@ -1,4 +1,4 @@
-/*********************************************************************************************************************
+/***************************************
 Copyright (c) 2025, Roldan JesusAlejandro <kechuroldanjesus@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
@@ -15,8 +15,8 @@ COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER I
 OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 SPDX-License-Identifier: MIT
-*********************************************************************************************************************/
-//hasta aqui el reloj funciona bien
+***************************************/
+
 /** @file main.c
  ** @brief Implementación principal del reloj digital con alarma
  ** @author Roldan JesusAlejandro
@@ -25,18 +25,17 @@ SPDX-License-Identifier: MIT
 
 /* === Headers files inclusions =============================================================== */
 
-#include "bsp.h"
-#include "screen.h"
-#include "clock.h"
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
+#include "semphr.h"
 
+#include "bsp.h"
+#include "clock.h"
+#include "screen.h"
+#include "digital.h"
+//hasta aqui funciona
 /* === Macros definitions ====================================================================== */
-
-#define TASK_CLOCK_LOGIC_PRIORITY        (tskIDLE_PRIORITY + 1)
-#define TASK_REFRESH_DISPLAY_PRIORITY    (tskIDLE_PRIORITY + 2)
-#define TASK_KEYPAD_PRIORITY             (tskIDLE_PRIORITY + 3)
 
 /* === Private data type declarations ========================================================== */
 
@@ -56,161 +55,113 @@ typedef enum {
 } clock_state_t;
 
 typedef enum {
-    EVENT_NONE,
-    EVENT_SET_TIME,
-    EVENT_SET_ALARM,
-    EVENT_INCREMENT,
-    EVENT_DECREMENT,
-    EVENT_ACCEPT,
-    EVENT_CANCEL,
-    EVENT_TICK
-} clock_event_t;
+    EV_SET_TIME,
+    EV_SET_ALARM,
+    EV_ACCEPT,
+    EV_CANCEL,
+    EV_INCREMENT,
+    EV_DECREMENT
+} event_t;
+
+typedef struct {
+    event_t type;
+} app_event_t;
+
+typedef enum {
+    ALARM_CHECK,
+    ALARM_ACTIVATE,
+    ALARM_DEACTIVATE
+} alarm_event_t;
 
 /* === Private variable declarations =========================================================== */
 
+static BoardT board;                                        ///< Estructura de la placa
+static uint8_t decimal_points [4] = {0, 0, 0, 0};           ///< Puntos decimales
+static clock_time_t time_clock;                            ///< Hora actual del reloj
+static clock_time_t time_alarm;                             ///< Hora de la alarma
+static clock_t clock;                                       ///< Variable para almacenar el reloj simulado
+static clock_state_t state = STATE_CLOCK_INIT;              ///< Estado actual del reloj
+static bool alarm_active = false;                           ///< Estado de la alarma
+static bool show_dot = true;                                ///< Control para mostrar/ocultar puntos
+
+static QueueHandle_t xEvtQ;
+static SemaphoreHandle_t xStateMutex;
+static TaskHandle_t xAlarmTaskHandle = NULL;
+static QueueHandle_t xAlarmQueue = NULL;
+
 /* === Private function declarations =========================================================== */
 
-static void vDisplayTask(void *pvParameters);
-static void vClockTask(void *pvParameters);
-//static void ProcessButtonEvents(void);
-static void ClockStates(clock_state_t mode);
-static void UpBCDAdjusted(uint8_t numero[2], bool is_hours);
-//static void DownBCDAdjusted(uint8_t numero[2], bool is_hours);
-//static void CancelAlarm(void);
-//static void HandleAlarm(void);
+void UpBCDAdjusted(uint8_t numero[2], bool is_hours);
+void DownBCDAdjusted(uint8_t numero[2], bool is_hours);
 
 /* === Public variable definitions ============================================================= */
 
 /* === Private variable definitions ============================================================ */
 
-static BoardT board;                     ///< Estructura de la placa
-static clock_t clock;                    ///< Variable para almacenar el reloj simulado
-static clock_state_t state;              ///< Estado actual del reloj
-//static uint32_t blink_counter = 0;       ///< Contador para controlar el parpadeo
-//static bool alarm_active = false;        ///< Estado de la alarma
-static bool show_dot = true;             ///< Control para mostrar/ocultar puntos
-static clock_time_t time_clock = {
-    .time = {
-        .seconds = {0, 0},
-        .minutes = {0, 0},
-        .hours = {0, 0}
-    }
-};
-
-static TaskHandle_t xDisplayTaskHandle = NULL;
-static TaskHandle_t xClockTaskHandle = NULL;
-static QueueHandle_t xEventQueue = NULL;
-static TaskHandle_t xKeypadTaskHandle = NULL;
-
 /* === Private function implementation ========================================================= */
 
-static void vDisplayTask(void *pvParameters) {
-    TickType_t xLastWakeTime = xTaskGetTickCount();
+static void vAlarmTask(void *pvParameters) {
+    alarm_event_t event;
+    
     while(1) {
-        ScreenRefresh(board->screen); // Solo refresca, no reescribe todo
-        vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(5));
-    }
-}
-
-static void vClockTask(void *pvParameters) {
-    clock_event_t event;
-    while(1) {
-        if(xQueueReceive(xEventQueue, &event, portMAX_DELAY) == pdPASS) {
+        if(xQueueReceive(xAlarmQueue, &event, pdMS_TO_TICKS(1000)) == pdPASS) {
             switch(event) {
-                case EVENT_SET_TIME:
-                    if(state == STATE_NORMAL) {
-                        ClockGetTime(clock, &time_clock);
-                        ClockStates(STATE_SET_MINUTES);
+                case ALARM_CHECK:
+                    if(!alarm_active && ClockIsAlarmEnabled(clock) && 
+                       ClockAlarmMatchTheTime(clock) && (state == STATE_NORMAL)) {
+                        alarm_active = true;
+                        DigitalOutputActivate(board->led_green);
+                        // Aquí podrías añadir patrones complejos de sonido/luz
                     }
                     break;
-                case EVENT_INCREMENT:
-                    if(state == STATE_SET_MINUTES)
-                        UpBCDAdjusted(time_clock.time.minutes,false);
-                    else if(state == STATE_SET_HOURS)
-                        UpBCDAdjusted(time_clock.time.hours,true);
+                    
+                case ALARM_ACTIVATE:
+                    alarm_active = true;
+                    DigitalOutputActivate(board->led_green);
                     break;
-                case EVENT_ACCEPT:
-                    if(state == STATE_SET_MINUTES)
-                        ClockStates(STATE_SET_HOURS);
-                    else if(state == STATE_SET_HOURS) {
-                        ClockSetTime(clock, &time_clock);
-                        ClockStates(STATE_NORMAL);
-                    }
-                    break;
-                
-                default:
+                    
+                case ALARM_DEACTIVATE:
+                    alarm_active = false;
+                    DigitalOutputDeactivate(board->led_green);
                     break;
             }
         }
     }
 }
 
-/**
- * @brief Tarea para el manejo del teclado
- * @param pvParameters Parámetros de la tarea (no usados)
- */
-static void vKeypadTask(void *pvParameters) {
-    const TickType_t xDebounceDelay = pdMS_TO_TICKS(20); // Retardo antirebote
-    TickType_t xLastWakeTime = xTaskGetTickCount();
-    
-    while(1) {
-        clock_event_t event = EVENT_NONE;
-        
-        // Leer botones con antirebote
-        if(DigitalInputHasActivate(board->set_time)) {
-            event = EVENT_SET_TIME;
-        }
-        else if(DigitalInputHasActivate(board->set_alarm)) {
-            event = EVENT_SET_ALARM;
-        }
-        else if(DigitalInputHasActivate(board->increment)) {
-            event = EVENT_INCREMENT;
-        }
-        else if(DigitalInputHasActivate(board->decrement)) {
-            event = EVENT_DECREMENT;
-        }
-        else if(DigitalInputHasActivate(board->accept)) {
-            event = EVENT_ACCEPT;
-        }
-        else if(DigitalInputHasActivate(board->cancel)) {
-            event = EVENT_CANCEL;
-        }
-        
-        // Enviar evento si se presionó algún botón
-        if(event != EVENT_NONE) {
-            xQueueSend(xEventQueue, &event, 0);
-            vTaskDelay(xDebounceDelay); // Esperar para evitar rebotes
-        }
-        
-        vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(10)); // Ciclo cada 10ms
-    }
+void HandleAlarm(void) {
+    alarm_event_t event = ALARM_CHECK;
+    xQueueSend(xAlarmQueue, &event, 0);
 }
+
+void CancelAlarm(void) {
+    alarm_event_t event = ALARM_DEACTIVATE;
+    xQueueSend(xAlarmQueue, &event, 0);
+}
+
+
 
 /**
  * @brief Maneja los diferentes estados del reloj
  * @param mode Estado actual del reloj
  */
 
-static void ClockStates(clock_state_t mode) {
+void ClockStates(clock_state_t mode) {
 
     state = mode;
-
-    uint8_t decimal_points[4] = {0, 0, 0, 0};
 
     switch (state) {
     case STATE_CLOCK_INIT:
 
-        DisplayFlashDigits(board->screen, 0, 3, 50);
+        DisplayFlashDigits(board->screen, 0, 3, 100);
         DisplayFlashPoints(board->screen, 1, 1, 100);
 
         break;
 
     case STATE_NORMAL:
 
-        ClockGetTime(clock, &time_clock);
-        decimal_points[1] = show_dot ? 1 : 0;
-        decimal_points[3] = ClockIsAlarmEnabled(clock) ? 1 : 0;
-        ScreenWriteBCD(board->screen, &time_clock, false, decimal_points);
+        DisplayFlashDigits(board->screen, 0, 0, 0);
+        DisplayFlashPoints(board->screen, 0, 0, 0);
         break;
 
     case STATE_SET_HOURS:
@@ -226,16 +177,117 @@ static void ClockStates(clock_state_t mode) {
         break;
 
     case STATE_SET_ALARM_HOURS:
-        DisplayFlashDigits(board->screen, 0, 3, 50);
+        DisplayFlashDigits(board->screen, 0, 1, 50);
         DisplayFlashPoints(board->screen, 0, 3, 0);
         break;
 
     case STATE_SET_ALARM_MINUTES:
 
-        DisplayFlashDigits(board->screen, 0, 3, 50);
+        DisplayFlashDigits(board->screen, 2, 3, 50);
         DisplayFlashPoints(board->screen, 0, 3, 0);
 
         break;
+    }
+}
+
+static void vStateMachineTask(void *pvParameters) {
+    app_event_t ev;
+
+    ClockStates(STATE_CLOCK_INIT);
+    if (xSemaphoreTake(xStateMutex, portMAX_DELAY)) {
+        ClockGetTime(clock, &time_clock);
+        ClockGetAlarm(clock, &time_alarm);
+        xSemaphoreGive(xStateMutex);
+    }
+
+    for (;;) {
+        if (xQueueReceive(xEvtQ, &ev, portMAX_DELAY)) {
+
+            if (xSemaphoreTake(xStateMutex, portMAX_DELAY)) {
+
+                switch (ev.type) {
+                case EV_SET_TIME:
+                    if (state == STATE_NORMAL || state == STATE_CLOCK_INIT) {
+                        ClockGetTime(clock, &time_clock);
+                        ClockStates(STATE_SET_MINUTES);
+                    }
+                    break;
+
+                case EV_SET_ALARM:
+                    if (state == STATE_NORMAL) {
+                        ClockGetAlarm(clock, &time_alarm);
+                        ClockStates(STATE_SET_ALARM_MINUTES);
+                    }
+                    break;
+
+                case EV_ACCEPT:
+                    if (state == STATE_SET_MINUTES) {
+                        ClockStates(STATE_SET_HOURS);
+                    } else if (state == STATE_SET_HOURS) {
+                        time_clock.time.seconds[0] = 0; time_clock.time.seconds[1] = 0;
+                        ClockSetTime(clock, &time_clock);
+                        ClockStates(STATE_NORMAL);
+                    } else if (state == STATE_SET_ALARM_MINUTES) {
+                        ClockStates(STATE_SET_ALARM_HOURS);
+                    } else if (state == STATE_SET_ALARM_HOURS) {
+                        time_alarm.time.seconds[0] = 0; time_alarm.time.seconds[1] = 0;
+                        ClockSetAlarm(clock, &time_alarm);
+                        ClockEnableAlarm(clock);
+                        ClockStates(STATE_NORMAL);
+                    } else if (state == STATE_NORMAL && alarm_active) {
+                        ClockPostponeAlarm(clock, 5);
+                        alarm_active = false;
+                        DigitalOutputDeactivate(board->led_green);
+                    }
+                    break;
+
+                case EV_CANCEL:
+                    if (state == STATE_NORMAL && alarm_active) {
+                        ClockDisableAlarm(clock);
+                        alarm_active = false;
+                        decimal_points[3] = 0;
+                        DigitalOutputDeactivate(board->led_green);
+                    } else if (state == STATE_SET_HOURS || state == STATE_SET_MINUTES ||
+                               state == STATE_SET_ALARM_HOURS || state == STATE_SET_ALARM_MINUTES) {
+                        ClockStates(STATE_NORMAL);
+                    }
+                    break;
+
+                case EV_INCREMENT:
+                    if (state == STATE_SET_HOURS) {
+                        UpBCDAdjusted(time_clock.time.hours, true);
+                    } else if (state == STATE_SET_MINUTES) {
+                        UpBCDAdjusted(time_clock.time.minutes, false);
+                    } else if (state == STATE_SET_ALARM_HOURS) {
+                        UpBCDAdjusted(time_alarm.time.hours, true);
+                    } else if (state == STATE_SET_ALARM_MINUTES) {
+                        UpBCDAdjusted(time_alarm.time.minutes, false);
+                    }
+                    break;
+
+                case EV_DECREMENT:
+                    if (state == STATE_SET_HOURS) {
+                        DownBCDAdjusted(time_clock.time.hours, true);
+                    } else if (state == STATE_SET_MINUTES) {
+                        DownBCDAdjusted(time_clock.time.minutes, false);
+                    } else if (state == STATE_SET_ALARM_HOURS) {
+                        DownBCDAdjusted(time_alarm.time.hours, true);
+                    } else if (state == STATE_SET_ALARM_MINUTES) {
+                        DownBCDAdjusted(time_alarm.time.minutes, false);
+                    }
+                    break;
+                }
+
+                xSemaphoreGive(xStateMutex);
+            }
+
+            // manejo de alarma (sin bloquear mutex mucho tiempo)
+            if (!alarm_active && ClockIsAlarmEnabled(clock) &&
+                ClockAlarmMatchTheTime(clock) && state == STATE_NORMAL) {
+                alarm_active = true;
+                DigitalOutputActivate(board->led_green);
+            }
+        }
     }
 }
 
@@ -266,44 +318,102 @@ void UpBCDAdjusted(uint8_t numero[2], bool is_hours) {
  * @param is_hours Indica si es un valor de horas (ajusta a 23) o minutos (ajusta a 59)
  */
 
-// void DownBCDAdjusted(uint8_t numero[2], bool is_hours) {
-//     uint8_t temp[2] = {numero[1], numero[0]}; // Invertimos
+void DownBCDAdjusted(uint8_t numero[2], bool is_hours) {
+    uint8_t temp[2] = {numero[1], numero[0]}; // Invertimos
     
-//     uint16_t value = temp[0] * 10 + temp[1];
-//     value = (value == 0) ? (is_hours ? 23 : 59) : value - 1;
+    uint16_t value = temp[0] * 10 + temp[1];
+    value = (value == 0) ? (is_hours ? 23 : 59) : value - 1;
     
-//     temp[0] = value / 10;
-//     temp[1] = value % 10;
+    temp[0] = value / 10;
+    temp[1] = value % 10;
     
-//     numero[0] = temp[1];
-//     numero[1] = temp[0];
-// }
+    numero[0] = temp[1];
+    numero[1] = temp[0];
+}
 
-/**
- * @brief Maneja la activación de la alarma
- */
+static void vRefreshScreenTask(void *pvParameters) {
+    for (;;) {
+        if (xSemaphoreTake(xStateMutex, portMAX_DELAY)) {
 
-// void HandleAlarm(void) {
-//     // Verificar si debemos activar la alarma
-//     if (!alarm_active && ClockIsAlarmEnabled(clock) && ClockAlarmMatchTheTime(clock) && (state == STATE_NORMAL)) {
-//         alarm_active = true;
-//         DigitalOutputActivate(board->led_green);  // Encender LED de alarma
-//     }
+            ScreenRefresh(board->screen);
+
+            if (state == STATE_SET_HOURS || state == STATE_SET_MINUTES) {
+                ScreenWriteBCD(board->screen, &time_clock, false, (uint8_t[]){0, 0, 0, 0});
+            } else if (state == STATE_SET_ALARM_HOURS || state == STATE_SET_ALARM_MINUTES) {
+                ScreenWriteBCD(board->screen, &time_alarm, false, (uint8_t[]){1, 1, 1, 1});
+            } else {
+                // STATE_NORMAL / INIT
+                decimal_points[1] = (state == STATE_NORMAL) ? (show_dot ? 1 : 0) : 1;
+                decimal_points[3] = ClockIsAlarmEnabled(clock) ? 1 : 0;
+                ScreenWriteBCD(board->screen, &time_clock, false, decimal_points);
+            }
+
+            xSemaphoreGive(xStateMutex);
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(3));
+    }
+}
+
+static void vDotTask(void *pvParameters) {
+    for (;;) {
+        if (xSemaphoreTake(xStateMutex, portMAX_DELAY)) {
+            if (state == STATE_NORMAL) {
+                show_dot = !show_dot;
+            } else {
+                show_dot = true; // o como prefieras en INIT
+            }
+            xSemaphoreGive(xStateMutex);
+        }
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+}
+
+static void vButtonTask(void *pvParameters) {
+    const TickType_t debounce = pdMS_TO_TICKS(30);
+    app_event_t ev;
+
+    for (;;) {
+        if (DigitalInputHasActivate(board->set_time)) {
+            ev.type = EV_SET_TIME;  xQueueSend(xEvtQ, &ev, 0); vTaskDelay(debounce);
+        } else if (DigitalInputHasActivate(board->set_alarm)) {
+            ev.type = EV_SET_ALARM; xQueueSend(xEvtQ, &ev, 0); vTaskDelay(debounce);
+        } else if (DigitalInputHasActivate(board->accept)) {
+            ev.type = EV_ACCEPT;    xQueueSend(xEvtQ, &ev, 0); vTaskDelay(debounce);
+        } else if (DigitalInputHasActivate(board->cancel)) {
+            ev.type = EV_CANCEL;    xQueueSend(xEvtQ, &ev, 0); vTaskDelay(debounce);
+        } else if (DigitalInputHasActivate(board->increment)) {
+            ev.type = EV_INCREMENT; xQueueSend(xEvtQ, &ev, 0); vTaskDelay(debounce);
+        } else if (DigitalInputHasActivate(board->decrement)) {
+            ev.type = EV_DECREMENT; xQueueSend(xEvtQ, &ev, 0); vTaskDelay(debounce);
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(2));
+    }
+}
+
+uint32_t ClockGetTicks(void) {
+    return xTaskGetTickCount();
+}
+
+static void vClockTask(void *pvParameters) {
+    for (;;) {
+        ClockNewTick(clock);  // el RTC simulado sigue corriendo
+
+        if (xSemaphoreTake(xStateMutex, portMAX_DELAY)) {
+            // SOLO actualizar time_clock desde el reloj en estados que no son de edición
+            if (state == STATE_NORMAL || state == STATE_CLOCK_INIT) {
+                ClockGetTime(clock, &time_clock);
+            }
+            xSemaphoreGive(xStateMutex);
+        }
+
+        HandleAlarm();
+
+        vTaskDelay(pdMS_TO_TICKS(1));
+    }
+}
     
-//     // La alarma permanecerá activa hasta que el usuario la cancele
-// }
-
-/**
- * @brief Cancela la alarma activa
- */
-
-//void CancelAlarm(void) {
-//    if (alarm_active) {
-//        alarm_active = false;
-//        DigitalOutputDeactivate(board->led_green);  // Apagar LED de alarma
-//        
-//    }
-//}
 
 
 /* === Public function implementation ========================================================= */
@@ -312,45 +422,39 @@ void UpBCDAdjusted(uint8_t numero[2], bool is_hours) {
  * @brief Función principal del programa
  * @return int Siempre retorna 0 (no utilizado en sistemas embebidos)
  */
-
 int main(void) {
 
     
-    clock_time_t time_alarm;
+    //clock_time_t time_alarm;
+    // Inicializar hardware
+    board = BoardCreate();
 
-    board = BoardCreate();     // Crear la estructura de la placa y asignar los pines a los leds y botones
-    clock = ClockCreate(1000); // Crear el objeto reloj
 
-    
-
-    show_dot = false;
-
-    // Forzar que el display arranque en 0000 con puntos apagados
-    ScreenWriteBCD(board->screen, &time_clock, false, (uint8_t[4]){0,0,0,0});
-
-    
-    
-    ClockGetTime(clock, &time_clock); // Obtener la hora actual del reloj
+    // Crear reloj con 1000 ticks por segundo
+    clock = ClockCreate(1000);
+    SysTickInit(1000); // Configurar SysTick para 1ms
+    // Configurar hora inicial
+    ClockGetTime(clock, &time_clock);
     ClockGetAlarm(clock,&time_alarm);
-    ClockDisableAlarm(clock); 
+    ClockDisableAlarm(clock);
 
-    SysTickInit(1000);
-    //ClockStates(STATE_CLOCK_INIT);
+    xEvtQ = xQueueCreate(10, sizeof(app_event_t));
+    xStateMutex = xSemaphoreCreateMutex();
+    xAlarmQueue = xQueueCreate(5, sizeof(alarm_event_t));
 
-    // Crear cola para eventos
-    xEventQueue = xQueueCreate(10, sizeof(clock_event_t));
+    // Tareas y prioridades
+    xTaskCreate(vAlarmTask,         "Alarm",    configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, &xAlarmTaskHandle);
+    xTaskCreate(vRefreshScreenTask, "Refresh",  configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 4, NULL);
+    xTaskCreate(vButtonTask,        "Buttons",  configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 3, NULL);
+    xTaskCreate(vClockTask,         "Clock",    configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 3, NULL);
+    xTaskCreate(vStateMachineTask,  "FSM",      configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
+    xTaskCreate(vDotTask,           "Dot",      configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
 
-    // Crear tareas
-    xTaskCreate(vClockTask, "Clock", configMINIMAL_STACK_SIZE * 2, NULL, TASK_CLOCK_LOGIC_PRIORITY, &xClockTaskHandle);
-    xTaskCreate(vDisplayTask, "Display", configMINIMAL_STACK_SIZE * 2, NULL, TASK_REFRESH_DISPLAY_PRIORITY, &xDisplayTaskHandle);
-    xTaskCreate(vKeypadTask, "Keypad", configMINIMAL_STACK_SIZE * 2, NULL, TASK_KEYPAD_PRIORITY, &xKeypadTaskHandle);
-
-    // Iniciar el planificador
     vTaskStartScheduler();
-
-    while(1);
     
+    while(1);
 }
+
 
 
 /* === End of documentation ==================================================================== */
