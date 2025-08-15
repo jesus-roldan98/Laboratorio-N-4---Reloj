@@ -120,7 +120,7 @@ void ClockNewTick(clock_t self) {
     self->tick_counter++;  
     
     // Solo incrementar el tiempo si la hora es válida
-    if (self->is_valid && self->tick_counter >= self->clock_ticks) {
+    if (self->is_valid && !self->init_mode && self->tick_counter >= self->clock_ticks) {
         self->tick_counter = 0;  
 
         // Aumentar 1 segundo en formato BCD
@@ -262,7 +262,7 @@ void ClockPostponeAlarm(clock_t self, uint8_t minutes) {
  *
  * @param self Instancia del reloj.
  */
-void ClockCancelSetTime(clock_t self) {
+_Bool ClockCancelSetTime(clock_t self) {
     if (!self->is_valid) {
         // Primer encendido: poner la hora en 00:00
         memset(&self->current_time, 0, sizeof(clock_time_t));
@@ -273,6 +273,8 @@ void ClockCancelSetTime(clock_t self) {
         // Si ya estaba válida, solo salir del modo seteo
         self->init_mode = false;
     }
+
+    return self->init_mode;
 }
 
 /* === End of documentation ======================================================================================== */

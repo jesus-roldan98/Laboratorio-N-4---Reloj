@@ -37,6 +37,8 @@ SPDX-License-Identifier: MIT
 //hasta aqui funciona
 /* === Macros definitions ====================================================================== */
 
+#define INACTIVITY_TIMEOUT_MS 30000      ///< 30 segundos
+
 /* === Private data type declarations ========================================================== */
 
 /**
@@ -77,17 +79,19 @@ typedef enum {
 
 static BoardT board;                                        ///< Estructura de la placa
 static uint8_t decimal_points [4] = {0, 0, 0, 0};           ///< Puntos decimales
-static clock_time_t time_clock;                            ///< Hora actual del reloj
+static clock_time_t time_clock;                             ///< Hora actual del reloj
 static clock_time_t time_alarm;                             ///< Hora de la alarma
 static clock_t clock;                                       ///< Variable para almacenar el reloj simulado
 static clock_state_t state = STATE_CLOCK_INIT;              ///< Estado actual del reloj
 static bool alarm_active = false;                           ///< Estado de la alarma
 static bool show_dot = true;                                ///< Control para mostrar/ocultar puntos
 
+
 static QueueHandle_t xEvtQ;
 static SemaphoreHandle_t xStateMutex;
 static TaskHandle_t xAlarmTaskHandle = NULL;
 static QueueHandle_t xAlarmQueue = NULL;
+static TickType_t last_input_tick = 0;                      ///< Último tick que hubo interacción
 
 /* === Private function declarations =========================================================== */
 
@@ -211,6 +215,7 @@ static void vStateMachineTask(void *pvParameters) {
                         ClockGetTime(clock, &time_clock);
                         ClockStates(STATE_SET_MINUTES);
                     }
+                    
                     break;
 
                 case EV_SET_ALARM:
@@ -238,6 +243,10 @@ static void vStateMachineTask(void *pvParameters) {
                         ClockPostponeAlarm(clock, 5);
                         alarm_active = false;
                         DigitalOutputDeactivate(board->led_green);
+                    } else if (state == STATE_NORMAL && !alarm_active) {
+                        ClockEnableAlarm(clock);
+                        alarm_active = true;
+                        decimal_points[3] = 1;
                     }
                     break;
 
@@ -247,9 +256,18 @@ static void vStateMachineTask(void *pvParameters) {
                         alarm_active = false;
                         decimal_points[3] = 0;
                         DigitalOutputDeactivate(board->led_green);
-                    } else if (state == STATE_SET_HOURS || state == STATE_SET_MINUTES ||
-                               state == STATE_SET_ALARM_HOURS || state == STATE_SET_ALARM_MINUTES) {
+                    } else if (state == STATE_SET_ALARM_HOURS || state == STATE_SET_ALARM_MINUTES) {
                         ClockStates(STATE_NORMAL);
+                    } else if (state == STATE_SET_HOURS || state == STATE_SET_MINUTES){
+
+                        if (!ClockCancelSetTime(clock)) {
+                           
+                            ClockStates(STATE_NORMAL);
+                            
+                        }else {
+                            ClockStates(STATE_CLOCK_INIT);
+                        }
+                        
                     }
                     break;
 
@@ -375,17 +393,29 @@ static void vButtonTask(void *pvParameters) {
 
     for (;;) {
         if (DigitalInputHasActivate(board->set_time)) {
-            ev.type = EV_SET_TIME;  xQueueSend(xEvtQ, &ev, 0); vTaskDelay(debounce);
+            ev.type = EV_SET_TIME;  xQueueSend(xEvtQ, &ev, 0);
+            last_input_tick = xTaskGetTickCount(); 
+            vTaskDelay(debounce);
         } else if (DigitalInputHasActivate(board->set_alarm)) {
-            ev.type = EV_SET_ALARM; xQueueSend(xEvtQ, &ev, 0); vTaskDelay(debounce);
+            ev.type = EV_SET_ALARM; xQueueSend(xEvtQ, &ev, 0); 
+            last_input_tick = xTaskGetTickCount();
+            vTaskDelay(debounce);
         } else if (DigitalInputHasActivate(board->accept)) {
-            ev.type = EV_ACCEPT;    xQueueSend(xEvtQ, &ev, 0); vTaskDelay(debounce);
+            ev.type = EV_ACCEPT;    xQueueSend(xEvtQ, &ev, 0); 
+            last_input_tick = xTaskGetTickCount();
+            vTaskDelay(debounce);
         } else if (DigitalInputHasActivate(board->cancel)) {
-            ev.type = EV_CANCEL;    xQueueSend(xEvtQ, &ev, 0); vTaskDelay(debounce);
+            ev.type = EV_CANCEL;    xQueueSend(xEvtQ, &ev, 0); 
+            last_input_tick = xTaskGetTickCount();
+            vTaskDelay(debounce);
         } else if (DigitalInputHasActivate(board->increment)) {
-            ev.type = EV_INCREMENT; xQueueSend(xEvtQ, &ev, 0); vTaskDelay(debounce);
+            ev.type = EV_INCREMENT; xQueueSend(xEvtQ, &ev, 0); 
+            last_input_tick = xTaskGetTickCount();
+            vTaskDelay(debounce);
         } else if (DigitalInputHasActivate(board->decrement)) {
-            ev.type = EV_DECREMENT; xQueueSend(xEvtQ, &ev, 0); vTaskDelay(debounce);
+            ev.type = EV_DECREMENT; xQueueSend(xEvtQ, &ev, 0); 
+            last_input_tick = xTaskGetTickCount();
+            vTaskDelay(debounce);
         }
 
         vTaskDelay(pdMS_TO_TICKS(2));
@@ -414,7 +444,23 @@ static void vClockTask(void *pvParameters) {
     }
 }
     
-
+static void vInactivityTask(void *pvParameters) {
+    for (;;) {
+        TickType_t now = xTaskGetTickCount();
+        if ((state == STATE_SET_MINUTES || state == STATE_SET_HOURS ||
+             state == STATE_SET_ALARM_MINUTES || state == STATE_SET_ALARM_HOURS) &&
+            (now - last_input_tick >= pdMS_TO_TICKS(INACTIVITY_TIMEOUT_MS))) {
+            
+            // Enviar evento CANCEL para descartar cambios
+            app_event_t ev = { .type = EV_CANCEL };
+            xQueueSend(xEvtQ, &ev, 0);
+            
+            // Reiniciamos el contador para no enviar múltiples eventos
+            last_input_tick = now;
+        }
+        vTaskDelay(pdMS_TO_TICKS(100)); // chequear cada 100 ms
+    }
+}
 
 /* === Public function implementation ========================================================= */
 
@@ -449,6 +495,7 @@ int main(void) {
     xTaskCreate(vClockTask,         "Clock",    configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 3, NULL);
     xTaskCreate(vStateMachineTask,  "FSM",      configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
     xTaskCreate(vDotTask,           "Dot",      configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    xTaskCreate(vInactivityTask, "Inactivity",  configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
 
     vTaskStartScheduler();
     
