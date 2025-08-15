@@ -83,8 +83,10 @@ static clock_time_t time_clock;                             ///< Hora actual del
 static clock_time_t time_alarm;                             ///< Hora de la alarma
 static clock_t clock;                                       ///< Variable para almacenar el reloj simulado
 static clock_state_t state = STATE_CLOCK_INIT;              ///< Estado actual del reloj
-static bool alarm_active = false;                           ///< Estado de la alarma
+
 static bool show_dot = true;                                ///< Control para mostrar/ocultar puntos
+static bool alarm_enabled = false;
+static bool alarm_triggered = false;
 
 
 static QueueHandle_t xEvtQ;
@@ -111,21 +113,20 @@ static void vAlarmTask(void *pvParameters) {
         if(xQueueReceive(xAlarmQueue, &event, pdMS_TO_TICKS(1000)) == pdPASS) {
             switch(event) {
                 case ALARM_CHECK:
-                    if(!alarm_active && ClockIsAlarmEnabled(clock) && 
+                    if(!alarm_triggered && alarm_enabled && 
                        ClockAlarmMatchTheTime(clock) && (state == STATE_NORMAL)) {
-                        alarm_active = true;
+                        alarm_triggered = true;
                         DigitalOutputActivate(board->led_green);
-                        // Aquí podrías añadir patrones complejos de sonido/luz
                     }
                     break;
                     
                 case ALARM_ACTIVATE:
-                    alarm_active = true;
+                    alarm_triggered = true;
                     DigitalOutputActivate(board->led_green);
                     break;
                     
                 case ALARM_DEACTIVATE:
-                    alarm_active = false;
+                    alarm_triggered = false;
                     DigitalOutputDeactivate(board->led_green);
                     break;
             }
@@ -238,24 +239,29 @@ static void vStateMachineTask(void *pvParameters) {
                         time_alarm.time.seconds[0] = 0; time_alarm.time.seconds[1] = 0;
                         ClockSetAlarm(clock, &time_alarm);
                         ClockEnableAlarm(clock);
+                        alarm_enabled = true;
                         ClockStates(STATE_NORMAL);
-                    } else if (state == STATE_NORMAL && alarm_active) {
+                    } else if (state == STATE_NORMAL && alarm_triggered) {
                         ClockPostponeAlarm(clock, 5);
-                        alarm_active = false;
+                        alarm_triggered = false;
                         DigitalOutputDeactivate(board->led_green);
-                    } else if (state == STATE_NORMAL && !alarm_active) {
+                    } else if (state == STATE_NORMAL && !alarm_triggered) {
                         ClockEnableAlarm(clock);
-                        alarm_active = true;
+                        alarm_enabled = true;
                         decimal_points[3] = 1;
                     }
                     break;
 
                 case EV_CANCEL:
-                    if (state == STATE_NORMAL && alarm_active) {
-                        ClockDisableAlarm(clock);
-                        alarm_active = false;
-                        decimal_points[3] = 0;
+                    if (state == STATE_NORMAL && alarm_triggered) {
+                        ClockCancelAlarmToday(clock);
+                        alarm_triggered = false;
+                        decimal_points[3] = 1;
                         DigitalOutputDeactivate(board->led_green);
+                    } else if (state == STATE_NORMAL && !alarm_triggered) {
+                        ClockDisableAlarm(clock);
+                        alarm_enabled = false;
+                        decimal_points[3] = 0;
                     } else if (state == STATE_SET_ALARM_HOURS || state == STATE_SET_ALARM_MINUTES) {
                         ClockStates(STATE_NORMAL);
                     } else if (state == STATE_SET_HOURS || state == STATE_SET_MINUTES){
@@ -300,9 +306,8 @@ static void vStateMachineTask(void *pvParameters) {
             }
 
             // manejo de alarma (sin bloquear mutex mucho tiempo)
-            if (!alarm_active && ClockIsAlarmEnabled(clock) &&
-                ClockAlarmMatchTheTime(clock) && state == STATE_NORMAL) {
-                alarm_active = true;
+            if (!alarm_triggered && alarm_enabled && ClockAlarmMatchTheTime(clock) && state == STATE_NORMAL) {
+                alarm_triggered = true;
                 DigitalOutputActivate(board->led_green);
             }
         }

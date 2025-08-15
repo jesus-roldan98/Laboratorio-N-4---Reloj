@@ -48,6 +48,8 @@ struct clock_s {
     clock_time_t alarm_time;
     bool alarm_active;
     bool init_mode;
+    bool alarm_ringing;
+    bool skippedToday;  // Nuevo: True = cancelada para hoy, suena mañana
 };
 
 
@@ -117,7 +119,17 @@ bool ClockSetTime(clock_t self, const clock_time_t * new_time) {
  */
 
 void ClockNewTick(clock_t self) {
-    self->tick_counter++;  
+    self->tick_counter++; 
+    bool end_of_day = false; 
+
+    if (self->is_valid && !self->init_mode) {
+        end_of_day = (self->current_time.time.hours[1] == 2 &&
+                      self->current_time.time.hours[0] == 3 &&
+                      self->current_time.time.minutes[1] == 5 &&
+                      self->current_time.time.minutes[0] == 9 &&
+                      self->current_time.time.seconds[1] == 5 &&
+                      self->current_time.time.seconds[0] == 9);
+    }
     
     // Solo incrementar el tiempo si la hora es válida
     if (self->is_valid && !self->init_mode && self->tick_counter >= self->clock_ticks) {
@@ -150,6 +162,26 @@ void ClockNewTick(clock_t self) {
             self->current_time.time.hours[1] = 0;
         }
     }
+
+    if (end_of_day) {
+        if (self->skippedToday) {
+            self->alarm_active = true;
+            self->skippedToday = false;
+        }
+    }
+}
+
+/**
+ * @brief Cancela la alarma solo para el día actual.
+ *
+ * No elimina la configuración de la hora de la alarma.
+ * La alarma se reactivará automáticamente al pasar a un nuevo día.
+ *
+ * @param self Instancia del reloj.
+ */
+void ClockCancelAlarmToday(clock_t self) {
+    self->alarm_active = false;
+    self->skippedToday = true;
 }
 
 
@@ -187,11 +219,16 @@ bool ClockGetAlarm(clock_t self, clock_time_t * alarm_time) {
  */
 
 bool ClockAlarmMatchTheTime(clock_t self) {
-    if (!self->alarm_active) {
-        return false; // La alarma no está activa, no hay coincidencia
+    if (!self->alarm_active || !self->is_valid) {
+        return false;
     }
-    return memcmp(&self->current_time, &self->alarm_time, sizeof(clock_time_t)) == 0;
-}
+    
+    // Comparar horas y minutos (ignorar segundos)
+    return (self->current_time.time.hours[0] == self->alarm_time.time.hours[0] &&
+            self->current_time.time.hours[1] == self->alarm_time.time.hours[1] &&
+            self->current_time.time.minutes[0] == self->alarm_time.time.minutes[0] &&
+            self->current_time.time.minutes[1] == self->alarm_time.time.minutes[1]);
+} 
 
 /**
  * @brief Habilita la alarma del reloj.
@@ -276,5 +313,7 @@ _Bool ClockCancelSetTime(clock_t self) {
 
     return self->init_mode;
 }
+
+
 
 /* === End of documentation ======================================================================================== */
