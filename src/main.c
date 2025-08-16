@@ -43,6 +43,12 @@ SPDX-License-Identifier: MIT
 
 /* === Private data type declarations ========================================================== */
 
+
+/**
+ * @enum alarm_event_t
+ * @brief Eventos internos de la tarea de alarma.
+ */
+
 typedef enum {
     ALARM_CHECK,
     ALARM_ACTIVATE,
@@ -51,27 +57,37 @@ typedef enum {
 
 /* === Private variable declarations =========================================================== */
 
-static BoardT board;                                        ///< Estructura de la placa
-static uint8_t decimal_points [4] = {0, 0, 0, 0};           ///< Puntos decimales
-clock_time_t time_clock;                             ///< Hora actual del reloj
-static clock_time_t time_alarm;                             ///< Hora de la alarma
-clock_t clock;                                       ///< Variable para almacenar el reloj simulado
-clock_state_t state = STATE_CLOCK_INIT;              ///< Estado actual del reloj
-
-static bool show_dot = true;                                ///< Control para mostrar/ocultar puntos
-static bool alarm_enabled = false;
-static bool alarm_triggered = false;
-
-
-static QueueHandle_t xEvtQ;
-SemaphoreHandle_t xStateMutex;
-static TaskHandle_t xAlarmTaskHandle = NULL;
-static QueueHandle_t xAlarmQueue = NULL;
-static TickType_t last_input_tick = 0;                      ///< Último tick que hubo interacción
+static BoardT board;                                        /**< Instancia de la placa */
+static uint8_t decimal_points [4] = {0, 0, 0, 0};           /**< Estado de los puntos decimales del display */
+clock_time_t time_clock;                                    /**< Hora actual del reloj */
+static clock_time_t time_alarm;                             /**< Hora configurada de la alarma */
+clock_t clock;                                              /**< Variable del reloj simulado */
+clock_state_t state = STATE_CLOCK_INIT;                     /**< Estado actual de la máquina de estados del reloj */
+static bool show_dot = true;                                /**< Control de parpadeo de puntos decimales */
+static bool alarm_enabled = false;                          /**< Indica si la alarma está activada */
+static bool alarm_triggered = false;                        /**< Indica si la alarma está sonando */
+static QueueHandle_t xEvtQ;                                 /**< Cola de eventos de botones */
+SemaphoreHandle_t xStateMutex;                              /**< Mutex para proteger estado compartido */
+static TaskHandle_t xAlarmTaskHandle = NULL;                /**< Handle de la tarea de alarma */    
+static QueueHandle_t xAlarmQueue = NULL;                    /**< Cola de eventos de alarma */    
+static TickType_t last_input_tick = 0;                      /**< Último tick de interacción del usuario */
 
 /* === Private function declarations =========================================================== */
 
+/**
+ * @brief Incrementa un número BCD con ajuste para horas o minutos.
+ * @param numero Array de 2 elementos con el número BCD (unidades, decenas)
+ * @param is_hours True si es valor de horas, false si es minutos
+ */
+
 void UpBCDAdjusted(uint8_t numero[2], bool is_hours);
+
+/**
+ * @brief Decrementa un número BCD con ajuste para horas o minutos.
+ * @param numero Array de 2 elementos con el número BCD (unidades, decenas)
+ * @param is_hours True si es valor de horas, false si es minutos
+ */
+
 void DownBCDAdjusted(uint8_t numero[2], bool is_hours);
 
 /* === Public variable definitions ============================================================= */
@@ -79,6 +95,11 @@ void DownBCDAdjusted(uint8_t numero[2], bool is_hours);
 /* === Private variable definitions ============================================================ */
 
 /* === Private function implementation ========================================================= */
+
+/**
+ * @brief Maneja la tarea de alarma.
+ * @param pvParameters Parámetros de la tarea (no utilizados)
+ */
 
 static void vAlarmTask(void *pvParameters) {
     alarm_event_t event;
@@ -108,21 +129,26 @@ static void vAlarmTask(void *pvParameters) {
     }
 }
 
+/**
+ * @brief Maneja los eventos de la alarma (verificación, activación, desactivación).
+ */
 void HandleAlarm(void) {
     alarm_event_t event = ALARM_CHECK;
     xQueueSend(xAlarmQueue, &event, 0);
 }
+
+/**
+ * @brief Cancela la alarma actual.
+ */
 
 void CancelAlarm(void) {
     alarm_event_t event = ALARM_DEACTIVATE;
     xQueueSend(xAlarmQueue, &event, 0);
 }
 
-
-
 /**
- * @brief Maneja los diferentes estados del reloj
- * @param mode Estado actual del reloj
+ * @brief Maneja los diferentes estados de la máquina de estados del reloj.
+ * @param mode Estado a establecer
  */
 
 void ClockStates(clock_state_t mode) {
@@ -328,6 +354,10 @@ void DownBCDAdjusted(uint8_t numero[2], bool is_hours) {
     numero[1] = temp[0];
 }
 
+/**
+ * @brief Actualiza la pantalla según el estado del reloj y los valores actuales.
+ */
+
 static void vRefreshScreenTask(void *pvParameters) {
     for (;;) {
         if (xSemaphoreTake(xStateMutex, portMAX_DELAY)) {
@@ -351,6 +381,10 @@ static void vRefreshScreenTask(void *pvParameters) {
         vTaskDelay(pdMS_TO_TICKS(3));
     }
 }
+
+/**
+ * @brief Controla el parpadeo de los puntos decimales en pantalla.
+ */
 
 static void vDotTask(void *pvParameters) {
     for (;;) {
@@ -411,6 +445,7 @@ int main(void) {
 
     // Crear reloj con 1000 ticks por segundo
     clock = ClockCreate(1000);
+    
     SysTickInit(1000); // Configurar SysTick para 1ms
     // Configurar hora inicial
     ClockGetTime(clock, &time_clock);
@@ -421,12 +456,10 @@ int main(void) {
     // Tareas y prioridades
     xTaskCreate(vAlarmTask,         "Alarm",    configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, &xAlarmTaskHandle);
     xTaskCreate(vRefreshScreenTask, "Refresh",  configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 4, NULL);
-    
     xTaskCreate(vClockTask,         "Clock",    configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 3, NULL);
     xTaskCreate(vStateMachineTask,  "FSM",      configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
     xTaskCreate(vDotTask,           "Dot",      configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
     xTaskCreate(vInactivityTask, "Inactivity",  configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-
     vTaskStartScheduler();
     
     while(1);

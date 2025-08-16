@@ -41,6 +41,11 @@ extern "C" {
 
 /* === Public data type declarations =============================================================================== */
 
+/**
+ * @enum clock_state_t
+ * @brief Estados posibles de la máquina de estados del reloj.
+ */
+
 typedef enum {
     STATE_CLOCK_INIT,
     STATE_NORMAL,
@@ -54,14 +59,40 @@ typedef enum {
 
 /* === Public variable declarations ================================================================================ */
 
+/**
+ * @brief Obtiene el número de ticks del reloj del sistema.
+ * @return Número de ticks desde el inicio del sistema.
+ */
+
 uint32_t ClockGetTicks(void);
 
+/** @brief Mutex para proteger el acceso a la variable de estado compartida */
+
 extern SemaphoreHandle_t xStateMutex;
+
+/** @brief Instancia del reloj principal del sistema */
+
 extern clock_t clock;
+
+/** @brief Estructura con la hora y minutos actuales del reloj */
+
 extern clock_time_t time_clock;
+
+/** @brief Estado actual de la máquina de estados del reloj */
+
 extern clock_state_t state;  // Variable global compartida
 
 /* === Public function declarations ================================================================================ */
+
+/**
+ * @brief Tarea de FreeRTOS que gestiona el reloj digital.
+ *
+ * Esta función implementa la máquina de estados del reloj, manejando los estados de inicialización,
+ * operación normal y ajuste de hora/alarma. La tarea actualiza la hora, gestiona la alarma y
+ * protege los accesos compartidos mediante semáforos.
+ *
+ * @param pvParameters Puntero a parámetros de la tarea (generalmente NULL)
+ */
 
 void vClockTask(void *pvParameters);
 

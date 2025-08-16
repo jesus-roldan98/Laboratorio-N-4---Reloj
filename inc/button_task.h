@@ -41,6 +41,11 @@ extern "C" {
 
 /* === Public data type declarations =============================================================================== */
 
+/**
+ * @enum event_t
+ * @brief Tipos de eventos que puede generar la interfaz de usuario mediante los botones.
+ */
+
 typedef enum {
     EV_SET_TIME,
     EV_SET_ALARM,
@@ -50,6 +55,11 @@ typedef enum {
     EV_DECREMENT
 } event_t;
 
+/**
+ * @struct app_event_t
+ * @brief Estructura que encapsula un evento generado por los botones.
+ */
+
 typedef struct {
     event_t type;
 } app_event_t;
@@ -57,6 +67,16 @@ typedef struct {
 /* === Public variable declarations ================================================================================ */
 
 /* === Public function declarations ================================================================================ */
+
+/**
+ * @brief Inicializa la tarea de botones.
+ *
+ * Esta función configura la tarea de FreeRTOS que se encarga de leer los botones del sistema y enviar
+ * eventos al queue especificado.
+ *
+ * @param board Instancia de la placa a la que pertenecen los botones.
+ * @param xEvtQueue Handle de la cola de eventos donde se publicarán los eventos detectados.
+ */
 
 void ButtonTaskInit(BoardT board, QueueHandle_t xEvtQueue);
 

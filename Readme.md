@@ -1,6 +1,6 @@
-# Electronica IV - Laboratorio 4
+# Electronica IV - RELOJ TERMINADO
 
-##   Capa de abstracción de hardware HAL (Hardware Abstraction Layer)
+##   Reloj funcional con sistema operativo freeRTOS
 
 ### Ejercicio a Desarrollar
 
