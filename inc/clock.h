@@ -179,6 +179,10 @@ bool ClockCancelSetTime(clock_t self);
 
 void ClockCancelAlarmToday(clock_t self);
 
+void HandleAlarm(void);
+
+void CancelAlarm(void);
+
 /* === End of conditional blocks =================================================================================== */
 
 #ifdef __cplusplus

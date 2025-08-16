@@ -260,8 +260,8 @@ struct BoardS * self = malloc(sizeof(struct BoardS));
       self->set_alarm = DigitalInit(2); // Inicializar el boton Set Alarm
       self->decrement = DigitalInit(3); // Inicializar el boton Decrement 
       self->increment = DigitalInit(4); // Inicializar el boton Increment
-      self->accept = DigitalInit(5); // Inicializar el boton Aceptar
-      self->cancel = DigitalInit(6); // Inicializar el boton Cancelar
+      self->accept = DigitalInit(6); // Inicializar el boton Aceptar
+      self->cancel = DigitalInit(5); // Inicializar el boton Cancelar
       }
 
       return self;

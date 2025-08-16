@@ -29,6 +29,8 @@ SPDX-License-Identifier: MIT
 #include "task.h"
 #include "queue.h"
 #include "semphr.h"
+#include "clock_task.h"
+#include "button_task.h"
 
 #include "bsp.h"
 #include "clock.h"
@@ -41,34 +43,6 @@ SPDX-License-Identifier: MIT
 
 /* === Private data type declarations ========================================================== */
 
-/**
- * @enum clock_state_t
- * @brief Estados de la máquina de estados del reloj
- */
-
-typedef enum {
-    STATE_CLOCK_INIT,        // Estado inicial: inicialización del reloj
-    STATE_NORMAL,            // Estado principal: mostrar hora actual
-    STATE_SET_HOURS,         // Estado para configurar horas
-    STATE_SET_MINUTES,       // Estado para configurar minutos
-    STATE_SET_ALARM_HOURS,   // Configurar alarma - horas
-    STATE_SET_ALARM_MINUTES, // Configurar alarma - minutos
-    
-} clock_state_t;
-
-typedef enum {
-    EV_SET_TIME,
-    EV_SET_ALARM,
-    EV_ACCEPT,
-    EV_CANCEL,
-    EV_INCREMENT,
-    EV_DECREMENT
-} event_t;
-
-typedef struct {
-    event_t type;
-} app_event_t;
-
 typedef enum {
     ALARM_CHECK,
     ALARM_ACTIVATE,
@@ -79,10 +53,10 @@ typedef enum {
 
 static BoardT board;                                        ///< Estructura de la placa
 static uint8_t decimal_points [4] = {0, 0, 0, 0};           ///< Puntos decimales
-static clock_time_t time_clock;                             ///< Hora actual del reloj
+clock_time_t time_clock;                             ///< Hora actual del reloj
 static clock_time_t time_alarm;                             ///< Hora de la alarma
-static clock_t clock;                                       ///< Variable para almacenar el reloj simulado
-static clock_state_t state = STATE_CLOCK_INIT;              ///< Estado actual del reloj
+clock_t clock;                                       ///< Variable para almacenar el reloj simulado
+clock_state_t state = STATE_CLOCK_INIT;              ///< Estado actual del reloj
 
 static bool show_dot = true;                                ///< Control para mostrar/ocultar puntos
 static bool alarm_enabled = false;
@@ -90,7 +64,7 @@ static bool alarm_triggered = false;
 
 
 static QueueHandle_t xEvtQ;
-static SemaphoreHandle_t xStateMutex;
+SemaphoreHandle_t xStateMutex;
 static TaskHandle_t xAlarmTaskHandle = NULL;
 static QueueHandle_t xAlarmQueue = NULL;
 static TickType_t last_input_tick = 0;                      ///< Último tick que hubo interacción
@@ -392,63 +366,9 @@ static void vDotTask(void *pvParameters) {
     }
 }
 
-static void vButtonTask(void *pvParameters) {
-    const TickType_t debounce = pdMS_TO_TICKS(30);
-    app_event_t ev;
 
-    for (;;) {
-        if (DigitalInputHasActivate(board->set_time)) {
-            ev.type = EV_SET_TIME;  xQueueSend(xEvtQ, &ev, 0);
-            last_input_tick = xTaskGetTickCount(); 
-            vTaskDelay(debounce);
-        } else if (DigitalInputHasActivate(board->set_alarm)) {
-            ev.type = EV_SET_ALARM; xQueueSend(xEvtQ, &ev, 0); 
-            last_input_tick = xTaskGetTickCount();
-            vTaskDelay(debounce);
-        } else if (DigitalInputHasActivate(board->accept)) {
-            ev.type = EV_ACCEPT;    xQueueSend(xEvtQ, &ev, 0); 
-            last_input_tick = xTaskGetTickCount();
-            vTaskDelay(debounce);
-        } else if (DigitalInputHasActivate(board->cancel)) {
-            ev.type = EV_CANCEL;    xQueueSend(xEvtQ, &ev, 0); 
-            last_input_tick = xTaskGetTickCount();
-            vTaskDelay(debounce);
-        } else if (DigitalInputHasActivate(board->increment)) {
-            ev.type = EV_INCREMENT; xQueueSend(xEvtQ, &ev, 0); 
-            last_input_tick = xTaskGetTickCount();
-            vTaskDelay(debounce);
-        } else if (DigitalInputHasActivate(board->decrement)) {
-            ev.type = EV_DECREMENT; xQueueSend(xEvtQ, &ev, 0); 
-            last_input_tick = xTaskGetTickCount();
-            vTaskDelay(debounce);
-        }
 
-        vTaskDelay(pdMS_TO_TICKS(2));
-    }
-}
 
-uint32_t ClockGetTicks(void) {
-    return xTaskGetTickCount();
-}
-
-static void vClockTask(void *pvParameters) {
-    for (;;) {
-        ClockNewTick(clock);  // el RTC simulado sigue corriendo
-
-        if (xSemaphoreTake(xStateMutex, portMAX_DELAY)) {
-            // SOLO actualizar time_clock desde el reloj en estados que no son de edición
-            if (state == STATE_NORMAL || state == STATE_CLOCK_INIT) {
-                ClockGetTime(clock, &time_clock);
-            }
-            xSemaphoreGive(xStateMutex);
-        }
-
-        HandleAlarm();
-
-        vTaskDelay(pdMS_TO_TICKS(1));
-    }
-}
-    
 static void vInactivityTask(void *pvParameters) {
     for (;;) {
         TickType_t now = xTaskGetTickCount();
@@ -482,6 +402,11 @@ int main(void) {
     //clock_time_t time_alarm;
     // Inicializar hardware
     board = BoardCreate();
+   
+    xEvtQ = xQueueCreate(10, sizeof(app_event_t));
+    xStateMutex = xSemaphoreCreateMutex();
+    xAlarmQueue = xQueueCreate(5, sizeof(alarm_event_t));
+    ButtonTaskInit(board, xEvtQ);
 
 
     // Crear reloj con 1000 ticks por segundo
@@ -492,14 +417,11 @@ int main(void) {
     ClockGetAlarm(clock,&time_alarm);
     ClockDisableAlarm(clock);
 
-    xEvtQ = xQueueCreate(10, sizeof(app_event_t));
-    xStateMutex = xSemaphoreCreateMutex();
-    xAlarmQueue = xQueueCreate(5, sizeof(alarm_event_t));
-
+    
     // Tareas y prioridades
     xTaskCreate(vAlarmTask,         "Alarm",    configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, &xAlarmTaskHandle);
     xTaskCreate(vRefreshScreenTask, "Refresh",  configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 4, NULL);
-    xTaskCreate(vButtonTask,        "Buttons",  configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 3, NULL);
+    
     xTaskCreate(vClockTask,         "Clock",    configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 3, NULL);
     xTaskCreate(vStateMachineTask,  "FSM",      configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
     xTaskCreate(vDotTask,           "Dot",      configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
